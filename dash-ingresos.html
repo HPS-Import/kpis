@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Ingresos 2026 | Proyecciones y Servicios Arboleda, S.A.S.</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
+    </script>
+    <style>
+        :root {
+            --bg: #f0f2f5;
+            --surface: #ffffff;
+            --primary: #1a3c5e;
+            --primary-light: #2c5f8a;
+            --accent: #e8873a;
+            --success: #2e7d32;
+            --danger: #c62828;
+            --info: #1565c0;
+            --text: #1a1a1a;
+            --text-secondary: #5a5a5a;
+            --border: #dde1e6;
+            --shadow: 0 2px 8px rgba(0,0,0,0.06);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --font: 'Segoe UI', system-ui, sans-serif;
+            --sidebar-w: 260px;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:var(--font); background:var(--bg); color:var(--text); display:flex; min-height:100vh; }
+        .login-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:linear-gradient(135deg, #1a3c5e, #2c5f8a); display:flex; align-items:center; justify-content:center; z-index:9999; }
+        .login-card { background:#fff; border-radius:var(--radius); padding:40px 32px; box-shadow:0 8px 32px rgba(0,0,0,0.1); width:360px; text-align:center; }
+        .login-card h2 { font-size:1.4rem; color:var(--primary); margin-bottom:6px; }
+        .login-card .subtitle { font-size:0.8rem; color:var(--text-secondary); margin-bottom:24px; }
+        .login-card input { width:100%; padding:12px; margin-bottom:12px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:0.9rem; }
+        .login-card .btn-login { width:100%; padding:12px; border:none; border-radius:25px; font-weight:600; background:var(--primary); color:#fff; cursor:pointer; }
+        .error-msg { color:var(--danger); font-size:0.8rem; margin-top:8px; }
+        .sidebar { width:var(--sidebar-w); background:var(--primary); color:#fff; display:flex; flex-direction:column; position:fixed; top:0; left:0; bottom:0; z-index:100; }
+        .sidebar-header { padding:24px 20px 16px; border-bottom:1px solid rgba(255,255,255,0.2); }
+        .sidebar-header h2 { font-size:1rem; font-weight:700; }
+        .sidebar-nav { flex:1; overflow-y:auto; padding:12px 0; }
+        .nav-section { padding:8px 20px 4px; font-size:0.68rem; text-transform:uppercase; opacity:0.5; font-weight:600; }
+        .sidebar-nav button { display:block; width:100%; text-align:left; background:none; border:none; color:rgba(255,255,255,0.8); padding:11px 20px; cursor:pointer; font-size:0.88rem; border-left:3px solid transparent; font-family:var(--font); }
+        .sidebar-nav button:hover { background:rgba(255,255,255,0.06); color:#fff; }
+        .sidebar-nav button.active { background:rgba(255,255,255,0.12); color:#fff; border-left-color:var(--accent); font-weight:600; }
+        .sidebar-footer { padding:16px 20px; border-top:1px solid rgba(255,255,255,0.2); font-size:0.7rem; display:flex; justify-content:space-between; align-items:center; }
+        .btn-logout { background:none; border:1px solid rgba(255,255,255,0.3); color:#fff; padding:4px 10px; border-radius:12px; cursor:pointer; font-size:0.65rem; }
+        .main { margin-left:var(--sidebar-w); flex:1; padding:28px 32px; max-width:1500px; }
+        .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:12px; }
+        .badge { background:var(--accent); color:#fff; padding:6px 14px; border-radius:20px; font-size:0.78rem; font-weight:600; }
+        .btn { padding:10px 22px; border-radius:25px; font-weight:600; font-size:0.85rem; cursor:pointer; border:none; font-family:var(--font); }
+        .btn-print { background:#fff; border:2px solid var(--info); color:var(--info); }
+        .btn-primary { background:var(--primary); color:#fff; }
+        .btn-accent { background:var(--accent); color:#fff; }
+        .btn-sm { padding:6px 14px; font-size:0.75rem; border-radius:18px; }
+        .view-panel { display:none; }
+        .view-panel.active { display:block; }
+        .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:16px; margin-bottom:24px; }
+        .kpi-card { background:#fff; border-radius:var(--radius); padding:20px; box-shadow:var(--shadow); border:1px solid var(--border); }
+        .kpi-label { font-size:0.75rem; text-transform:uppercase; color:var(--text-secondary); font-weight:600; }
+        .kpi-value { font-size:1.8rem; font-weight:700; color:var(--primary); }
+        .kpi-sub { font-size:0.78rem; color:var(--text-secondary); }
+        .charts-row { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:24px; }
+        @media (max-width:1000px) { .charts-row { grid-template-columns:1fr; } }
+        .chart-card { background:#fff; border-radius:var(--radius); padding:20px; box-shadow:var(--shadow); border:1px solid var(--border); }
+        .chart-card h3 { font-size:0.9rem; font-weight:700; color:var(--primary); margin-bottom:14px; }
+        canvas { max-height:300px; }
+        .form-card { background:#fff; border-radius:var(--radius); padding:24px; box-shadow:var(--shadow); border:1px solid var(--border); margin-bottom:20px; }
+        .form-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:14px; }
+        .form-group { display:flex; flex-direction:column; gap:4px; }
+        .form-group label { font-size:0.75rem; font-weight:600; color:var(--text-secondary); }
+        .form-group input, .form-group select { padding:10px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:0.9rem; }
+        .table-wrapper { overflow-x:auto; }
+        table { width:100%; border-collapse:collapse; font-size:0.82rem; }
+        th, td { padding:10px 12px; text-align:right; border-bottom:1px solid var(--border); }
+        th { background:#f7f8fa; font-weight:700; color:var(--primary); font-size:0.7rem; }
+        td:first-child, th:first-child { text-align:left; font-weight:600; }
+        @media print { .sidebar, .btn, .toast, .no-print { display:none!important; } .main { margin-left:0!important; padding:10px!important; } }
+    </style>
+</head>
+<body>
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-card">
+            <h2>PROYECCIONES Y SERVICIOS ARBOLEDA, S.A.S.</h2>
+            <div class="subtitle">Dashboard de Ingresos 2026</div>
+            <input type="text" id="loginUsername" placeholder="Usuario" autocomplete="off">
+            <input type="password" id="loginPassword" placeholder="Contraseña">
+            <button class="btn-login" onclick="iniciarSesion()">Ingresar</button>
+            <div class="error-msg" id="loginError"></div>
+            <div class="hint" style="font-size:0.7rem;opacity:0.8;margin-top:10px;">admin / admin123 | gerente / gerente123 | invitado / invitado</div>
+        </div>
+    </div>
+
+    <aside class="sidebar no-print" id="sidebar" style="display:none;">
+        <div class="sidebar-header"><h2>PROYECCIONES Y SERVICIOS<br>ARBOLEDA, S.A.S.</h2></div>
+        <nav class="sidebar-nav">
+            <div class="nav-section">Mensual</div>
+            <button data-view="monthly" data-month="0">Enero</button>
+            <button data-view="monthly" data-month="1">Febrero</button>
+            <button data-view="monthly" data-month="2">Marzo</button>
+            <button data-view="monthly" data-month="3">Abril</button>
+            <button data-view="monthly" data-month="4">Mayo</button>
+            <button data-view="monthly" data-month="5">Junio</button>
+            <button data-view="monthly" data-month="6">Julio</button>
+            <button data-view="monthly" data-month="7">Agosto</button>
+            <button data-view="monthly" data-month="8">Septiembre</button>
+            <button data-view="monthly" data-month="9">Octubre</button>
+            <button data-view="monthly" data-month="10">Noviembre</button>
+            <button data-view="monthly" data-month="11">Diciembre</button>
+            <div class="nav-section">Consolidado</div>
+            <button data-view="annual">Total Anual</button>
+            <button data-view="dashboard">Dashboard KPIs</button>
+        </nav>
+        <div class="sidebar-footer"><span id="loggedUserLabel"></span><button class="btn-logout" onclick="cerrarSesion()">Salir</button></div>
+    </aside>
+
+    <main class="main" id="mainContent" style="display:none;">
+        <div class="view-panel active" id="view-monthly">
+            <div class="topbar"><h1 id="monthTitle"></h1><div><span class="badge" id="metaBadge"></span><button class="btn btn-print btn-sm keep-print" onclick="imprimirVista()">Imprimir</button></div></div>
+            <div class="form-card no-print" id="formIngreso" style="display:none;">
+                <h3>Agregar / Editar Ingreso</h3>
+                <div class="form-grid">
+                    <div class="form-group"><label>Fecha</label><input type="date" id="ingFecha"></div>
+                    <div class="form-group"><label>Cliente</label><input type="text" id="ingCliente"></div>
+                    <div class="form-group"><label>Presupuesto</label><input type="text" id="ingPresupuesto"></div>
+                    <div class="form-group"><label>Línea</label><select id="ingLinea"><option value="HPS">HPS</option><option value="IMPORT">IMPORT</option><option value="">Sin clasificar</option></select></div>
+                    <div class="form-group"><label>Producto/Servicio</label><input type="text" id="ingProducto"></div>
+                    <div class="form-group"><label>Monto USD$</label><input type="number" id="ingMonto" step="0.01"></div>
+                </div>
+                <div class="btn-row" style="margin-top:12px;display:flex;gap:10px;"><button class="btn btn-primary" onclick="guardarIngreso()">Guardar</button><button class="btn btn-accent" onclick="limpiarFormIngreso()">Nuevo</button></div>
+            </div>
+            <div class="kpi-grid" id="kpiMonth"></div>
+            <div class="charts-row">
+                <div class="chart-card"><h3>Composición HPS vs IMPORT</h3><canvas id="chartHPSImport"></canvas></div>
+                <div class="chart-card"><h3>Evolución Diaria de Ingresos</h3><canvas id="chartDiario"></canvas></div>
+            </div>
+            <div class="form-card"><h3>Ingresos del Mes</h3><div class="table-wrapper" id="tablaIngresos"></div></div>
+        </div>
+        <div class="view-panel" id="view-annual">
+            <div class="topbar"><h1>Total Anual 2026</h1><div><span class="badge">Meta: $1,250,000</span><button class="btn btn-print btn-sm keep-print" onclick="imprimirVista()">Imprimir</button></div></div>
+            <div class="kpi-grid" id="kpiAnnual"></div>
+            <div class="charts-row">
+                <div class="chart-card"><h3>Evolución Mensual de Ingresos</h3><canvas id="chartEvolucion"></canvas></div>
+                <div class="chart-card"><h3>HPS vs IMPORT por Mes</h3><canvas id="chartHPSImportMensual"></canvas></div>
+            </div>
+            <div class="form-card"><h3>Top Clientes</h3><div class="table-wrapper" id="tablaClientes"></div></div>
+        </div>
+        <div class="view-panel" id="view-dashboard">
+            <div class="topbar"><h1>Dashboard KPIs</h1><button class="btn btn-print btn-sm keep-print" onclick="imprimirVista()">Imprimir</button></div>
+            <div class="kpi-grid" id="kpiDashboard"></div>
+            <div class="charts-row">
+                <div class="chart-card"><h3>Cumplimiento de Meta Anual</h3><canvas id="chartMeta"></canvas></div>
+                <div class="chart-card"><h3>Distribución HPS vs IMPORT</h3><canvas id="chartDistribucion"></canvas></div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        window.imprimirVista = function() { window.print(); };
+        const USUARIOS = { 'admin': { password: 'admin123', rol: 'admin', nombre: 'Administrador' }, 'gerente': { password: 'gerente123', rol: 'admin', nombre: 'Gerente' }, 'invitado': { password: 'invitado', rol: 'invitado', nombre: 'Invitado' } };
+        let usuarioActual = null;
+        const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+        const META_ANUAL = 1250000;
+        const META_MENSUAL = META_ANUAL / 12;
+        const STORAGE_KEY_ING = 'ingresos_2026_data';
+        let ingresos = [];
+        let currentMonth = 0;
+
+        function inicializarDatos() {
+            const saved = localStorage.getItem(STORAGE_KEY_ING);
+            if (saved) { ingresos = JSON.parse(saved); }
+            else { precargarIngresos(); }
+        }
+        function precargarIngresos() {
+            ingresos = [
+                // ENERO
+                { fecha: '2026-01-03', mes: 0, cliente: 'CILCAMA- HOTEL CASA MARINA REEF', presupuesto: '23005826', linea: 'HPS', producto: 'TARJETAS RFID', monto: 959.34 },
+                { fecha: '2026-01-06', mes: 0, cliente: 'MODUS VIVENDIS - HOTEL EL BARCO', presupuesto: '23006048', linea: 'HPS', producto: 'TARJETAS RFID', monto: 793.90 },
+                { fecha: '2026-01-06', mes: 0, cliente: 'CONST. JOHANN REYES MARMOLEJOS', presupuesto: '23005947', linea: 'IMPORT', producto: 'PUERTA RF MESKER', monto: 1562.50 },
+                { fecha: '2026-01-06', mes: 0, cliente: 'CILCAMA- HOTEL CASA MARINA REEF', presupuesto: '23005826', linea: 'HPS', producto: 'TARJETAS RFID', monto: 732.78 },
+                { fecha: '2026-01-07', mes: 0, cliente: 'HOTEL MAJESTIC', presupuesto: '23005689', linea: 'HPS', producto: 'TARJETAS RFID', monto: 566.39 },
+                { fecha: '2026-01-08', mes: 0, cliente: 'HOTEL MAJESTIC', presupuesto: '23005701', linea: 'HPS', producto: 'TARJETAS RFID', monto: 1681.50 },
+                { fecha: '2026-01-09', mes: 0, cliente: 'HOTEL MAJESTIC', presupuesto: '23005715', linea: 'HPS', producto: 'TARJETAS RFID', monto: 565.07 },
+                { fecha: '2026-01-12', mes: 0, cliente: 'CORAL GULF ASSETS - HOTEL ST. REGIS CAP CANA', presupuesto: '23005758', linea: 'HPS', producto: 'CAJAS FUERTES SD 49', monto: 6061.79 },
+                { fecha: '2026-01-13', mes: 0, cliente: 'GRUPO ARHE SRL', presupuesto: '23005633', linea: 'IMPORT', producto: 'PUERTA RF MESKER', monto: 2119.20 },
+                { fecha: '2026-01-13', mes: 0, cliente: 'PLAYA GRANDE HOLDINGS', presupuesto: '23004672', linea: 'HPS', producto: 'CERRADURAS VINGCARD', monto: 935.51 },
+                { fecha: '2026-01-19', mes: 0, cliente: 'DOMINICANOTEL- HOTEL SENATOR PUERTO PLATA', presupuesto: '23006064', linea: 'HPS', producto: 'IGUALA MENSUAL DE MANTTO SENATOR PP', monto: 1452.54 },
+                { fecha: '2026-01-19', mes: 0, cliente: 'VIVA INTERNATIONAL', presupuesto: '23006059', linea: 'HPS', producto: 'CAJA FUERTE ZENITH FLOOR', monto: 171.86 },
+                { fecha: '2026-01-20', mes: 0, cliente: 'CILCAMA- HOTEL CASA MARINA REEF', presupuesto: '23006128', linea: 'HPS', producto: 'PRODUCTOS HPS HOTEL AMHSA MARINA BEACH AND REEF', monto: 6802.32 },
+                { fecha: '2026-01-21', mes: 0, cliente: 'GLOBAL SPACE TRADINGS SRL', presupuesto: '23006139', linea: 'IMPORT', producto: 'VIDRIO TEMPLADO', monto: 1561.36 },
+                { fecha: '2026-01-23', mes: 0, cliente: 'ATLAMBAR MANAGEMENT', presupuesto: '23006150', linea: 'IMPORT', producto: 'PUERTAS CORTAFUEGO', monto: 13876.23 },
+                { fecha: '2026-01-27', mes: 0, cliente: 'DOMINICANOTEL- HOTEL SENATOR PUERTO PLATA', presupuesto: '23006113', linea: 'HPS', producto: 'MINIBARES', monto: 744.52 },
+                { fecha: '2026-01-28', mes: 0, cliente: 'NC12- HOTEL SECRETS AND DREAMS MICHES', presupuesto: '23006009', linea: 'HPS', producto: 'PRODUCTOS HPS', monto: 6651.76 },
+                { fecha: '2026-01-29', mes: 0, cliente: 'NC12- HOTEL SECRETS AND DREAMS MICHES', presupuesto: '23006009', linea: 'HPS', producto: 'PRODUCTOS HPS', monto: 3357.00 },
+                { fecha: '2026-01-29', mes: 0, cliente: 'ALIBEY DEL CARIBE', presupuesto: '23003813', linea: 'IMPORT', producto: 'PUERTAS CORTAFUEGO', monto: 204.47 },
+                { fecha: '2026-01-30', mes: 0, cliente: 'CASA ARQUIDIOCESANA MARIA DE LA ALT.', presupuesto: '23006144', linea: 'HPS', producto: 'UPGRADE CLASSIC MAG A CLASSIC RFID 4G', monto: 2104.57 },
+                { fecha: '2026-01-30', mes: 0, cliente: 'CASA ARQUIDIOCESANA MARIA DE LA ALT.', presupuesto: '23006145', linea: 'HPS', producto: 'UPGRADE CLASSIC MAG A CLASSIC RFID 4G', monto: 350.74 },
+                { fecha: '2026-01-30', mes: 0, cliente: 'MODUS VIVENDIS - HOTEL EL BARCO', presupuesto: '23006162', linea: 'HPS', producto: 'PRODUCTOS HPS', monto: 112.10 },
+                // FEBRERO
+                { fecha: '2026-02-02', mes: 1, cliente: 'CONST. JOHANN REYES MARMOLEJOS', presupuesto: '23005947', linea: 'IMPORT', producto: 'PUERTAS CORTAFUEGO', monto: 1230.67 },
+                { fecha: '2026-02-04', mes: 1, cliente: 'DOMINICANOTEL- HOTEL SENATOR PP', presupuesto: '23006063-23006064', linea: 'HPS', producto: 'PRODUCTOS HPS VINGCARD', monto: 5523.05 },
+                { fecha: '2026-02-07', mes: 1, cliente: 'JABAQUE INVERSIONES - HOTEL W PUNTA CANA', presupuesto: '23006235-23006214', linea: 'HPS', producto: 'HOTEL W PUNTA CANA', monto: 7972.20 },
+                { fecha: '2026-02-10', mes: 1, cliente: 'MDINA HOLDINGS - HOTEL OCEAN CLUB', presupuesto: '23006252', linea: 'HPS', producto: 'PRODUCTOS HPS', monto: 802.39 },
+                { fecha: '2026-02-10', mes: 1, cliente: 'SOLAYA HOTELS AND RESORTS - HOTEL EDEN ROC', presupuesto: '23006014', linea: 'HPS', producto: 'HOTEL EDEN ROC', monto: 8831.54 },
+                { fecha: '2026-02-10', mes: 1, cliente: 'ASOCIACION DOMINICANA PROFAMILIA', presupuesto: '23006209', linea: 'HPS', producto: 'PROFAMILIA SANTIAGO', monto: 259.60 },
+                { fecha: '2026-02-11', mes: 1, cliente: 'GRUPO ARHE', presupuesto: '23005633', linea: 'IMPORT', producto: 'PUERTAS CORTAFUEGO', monto: 908.23 },
+                { fecha: '2026-02-16', mes: 1, cliente: 'DOMINICANOTEL- HOTEL SENATOR PP', presupuesto: '23006272', linea: 'HPS', producto: 'PRODUCTOS HPS VINGCARD', monto: 100.30 },
+                { fecha: '2026-02-17', mes: 1, cliente: 'CILCAMA- HOTEL CASA MARINA REEF', presupuesto: '23006128', linea: 'HPS', producto: 'PRODUCTOS HPS HOTEL AMHSA MARINA BEACH AND REEF', monto: 2915.28 },
+                { fecha: '2026-02-17', mes: 1, cliente: 'JOY LUXURY VILLAGE', presupuesto: '23006124', linea: 'HPS', producto: 'PRODUCTOS HPS', monto: 1875.84 },
+                { fecha: '2026-02-18', mes: 1, cliente: 'HOTELERA BAVARO- HOTEL BARCELO BAVARO', presupuesto: '23006133', linea: 'HPS', producto: 'HOTEL BARCELO BEACH RESORTS', monto: 356.39 },
+                { fecha: '2026-02-18', mes: 1, cliente: 'CONSTRUCTORA AYBAR', presupuesto: '23006236', linea: 'HPS', producto: 'HYATT PLACE', monto: 482.58 },
+                { fecha: '2026-02-19', mes: 1, cliente: 'NC12, SRL - HOTEL SECRETS AND DREAMS MICHES', presupuesto: '23006103', linea: 'HPS', producto: 'PRODUCTOS HPS', monto: 762.71 },
+                { fecha: '2026-02-20', mes: 1, cliente: 'JABAQUE INVERSIONES - HOTEL W PUNTA CANA', presupuesto: '23006062', linea: 'HPS', producto: 'HOTEL W PUNTA CANA', monto: 676.31 },
+                { fecha: '2026-02-24', mes: 1, cliente: 'INVERSIONES ZAHENA- HOTEL HARD ROCK PUNTA CANA', presupuesto: '23005927', linea: 'HPS', producto: 'PRODUCTOS HPS VINGCARD', monto: 20208.68 },
+                { fecha: '2026-02-24', mes: 1, cliente: 'PB HOTEL - HOTEL ROYALTON PUNTA CANA', presupuesto: '23006241', linea: 'HPS', producto: 'TARJETAS DE ACCESO', monto: 931.79 },
+                { fecha: '2026-02-24', mes: 1, cliente: 'CONSTRUCTORA AYBAR', presupuesto: '23006251', linea: 'IMPORT', producto: 'HYATT PLACE', monto: 4249.10 },
+                { fecha: '2026-02-24', mes: 1, cliente: 'KALAYA INVESTMENT', presupuesto: '23006318', linea: 'HPS', producto: 'PRODUCTOS HPS', monto: 4153.83 },
+                { fecha: '2026-02-24', mes: 1, cliente: 'ING360 SRL', presupuesto: '23006308', linea: 'IMPORT', producto: 'TABIQUES MOVILES ACUSTICOS', monto: 708.15 },
+                // MARZO
+                { fecha: '2026-03-01', mes: 2, cliente: 'MAJESTIC DESARROLLOS DEL CARIBE', presupuesto: '23006032', linea: '', producto: '', monto: 4252.07 },
+                { fecha: '2026-03-03', mes: 2, cliente: 'HOTEL COSTA LARIMAR', presupuesto: '23006340', linea: 'HPS', producto: 'HOTEL COSTA LARIMAR', monto: 920.39 },
+                { fecha: '2026-03-03', mes: 2, cliente: 'NEXUS GESTION', presupuesto: '23006258', linea: 'HPS', producto: 'HACIENDA SAMANA BAY', monto: 293.82 },
+                { fecha: '2026-03-04', mes: 2, cliente: 'HABITA GROUP GDC SRL', presupuesto: '23006296', linea: 'IMPORT', producto: 'PUERTAS CORTAFUEGO', monto: 1300.00 },
+                { fecha: '2026-03-05', mes: 2, cliente: 'RL HABITT', presupuesto: '23006298', linea: 'HPS', producto: 'CERRADURA ELECTRONICA', monto: 219.48 },
+                { fecha: '2026-03-06', mes: 2, cliente: 'HOTEL SATAMA', presupuesto: '23006407', linea: 'HPS', producto: 'TARJETAS DE ACCESO PARA HOTEL SATAMA', monto: 878.81 },
+                { fecha: '2026-03-06', mes: 2, cliente: 'UVEALTO 2015, S.A.', presupuesto: '23006217', linea: 'HPS', producto: 'PRODUCTOS HPS', monto: 4953.11 },
+                { fecha: '2026-03-09', mes: 2, cliente: 'LIMBURG INVESTMENTS', presupuesto: '23006156', linea: 'HPS', producto: 'PRODUCTOS HPS', monto: 559.32 },
+                { fecha: '2026-03-10', mes: 2, cliente: 'BLUECAP HOLDINGS DR SAS', presupuesto: '23005799', linea: 'HPS', producto: 'CAJAS FUERTES', monto: 425.34 },
+                { fecha: '2026-03-13', mes: 2, cliente: 'INVERSIONES ABEY', presupuesto: '23006431', linea: 'IMPORT', producto: 'TABIQUES MOVILES ACUSTICOS', monto: 24844.14 },
+                { fecha: '2026-03-16', mes: 2, cliente: 'CAMP DAVID RANCH', presupuesto: '23006293', linea: 'HPS', producto: 'EQUIPOS HPS PARA CAMP DAVID RANCH', monto: 174.64 },
+                { fecha: '2026-03-18', mes: 2, cliente: 'CASA MARINA SAMANA', presupuesto: '23005872', linea: 'HPS', producto: 'PRODUCTOS HPS', monto: 3470.38 },
+                { fecha: '2026-03-19', mes: 2, cliente: 'UVEALTO 2015, S.A.', presupuesto: '23006276', linea: 'HPS', producto: 'PRODUCTOS HPS', monto: 1942.50 },
+                { fecha: '2026-03-27', mes: 2, cliente: 'CILCAMA', presupuesto: '23006321', linea: 'HPS', producto: 'PRODUCTOS HPS HOTEL AMHSA MARINA BEACH AND REEF', monto: 44623.20 },
+                { fecha: '2026-03-27', mes: 2, cliente: 'INVERSIONES OCRE ROJO', presupuesto: '23006478', linea: 'IMPORT', producto: 'DIVISIONES DE BAÑOS HOTEL BREATHLES DE UVERO', monto: 1159.19 },
+                { fecha: '2026-03-31', mes: 2, cliente: 'DOMINICAN DEVELOPMENTS DDP', presupuesto: '23006462', linea: 'IMPORT', producto: 'PUERTAS CORTAFUEGO', monto: 221.84 },
+                // ABRIL
+                { fecha: '2026-04-08', mes: 3, cliente: 'REINA SANTO - HOTEL BILLINI', presupuesto: '23006172', linea: 'HPS', producto: 'HOTEL BILLINI', monto: 302.08 },
+                { fecha: '2026-04-10', mes: 3, cliente: 'GSM INVESTMENTS - HOTEL DREAMS MACAO', presupuesto: '23006335', linea: 'HPS', producto: 'TARJETAS DE ACCESO', monto: 11937.99 },
+                { fecha: '2026-04-13', mes: 3, cliente: 'HOTEL SECRETS/DREAMS LA ROMANA', presupuesto: '23005642', linea: 'HPS', producto: 'CAJAS FUERTES', monto: 291351.27 },
+                { fecha: '2026-04-15', mes: 3, cliente: 'INVERSIONES OCRE ROJO', presupuesto: '23005999', linea: 'HPS', producto: 'PRODUCTOS HPS', monto: 952.60 },
+                { fecha: '2026-04-16', mes: 3, cliente: 'IDEARE GROUP', presupuesto: '23006561', linea: 'IMPORT', producto: 'TORRE ISABELA', monto: 1023.00 },
+                { fecha: '2026-04-20', mes: 3, cliente: 'SANS SOUCI PORTS', presupuesto: '23006417', linea: 'IMPORT', producto: 'PUERTAS METÁLICAS DIVERSAS', monto: 5675.59 },
+                { fecha: '2026-04-22', mes: 3, cliente: 'COBEGA- HOTEL EMOTIONS JUAN DOLIO', presupuesto: '23006476', linea: 'HPS', producto: 'EQUIPOS HPS PARA EMOTION JUAN DOLIO', monto: 820.81 },
+                { fecha: '2026-04-23', mes: 3, cliente: 'NC12, SRL- SECRETS AND DREAMS MICHES', presupuesto: '23006121-23006122', linea: 'HPS', producto: 'PRODUCTOS HPS', monto: 12602.20 },
+                { fecha: '2026-04-27', mes: 3, cliente: 'VARALLO COMERCIAL- SECRETS ROYAL', presupuesto: '23006444', linea: 'HPS', producto: 'SECRETS', monto: 23745.60 },
+                { fecha: '2026-04-27', mes: 3, cliente: 'VARALLO COMERCIAL- SECRETS ROYAL', presupuesto: '23006477', linea: 'IMPORT', producto: 'SECRETS', monto: 343.66 },
+                { fecha: '2026-04-28', mes: 3, cliente: 'MXC DOMINICANA - PROYECTO YANUNA', presupuesto: '23006465', linea: 'HPS', producto: 'PRODUCTOS HPS', monto: 1256.46 },
+                { fecha: '2026-04-29', mes: 3, cliente: 'MXC DOMINICANA - PROYECTO YANUNA', presupuesto: '23006466', linea: 'HPS', producto: 'PRODUCTOS HPS', monto: 965.50 },
+                { fecha: '2026-04-29', mes: 3, cliente: 'PACKAGING SOLUTIONS PACKSOL SRL', presupuesto: '23006593', linea: 'IMPORT', producto: 'PUERTAS CORTAFUEGO', monto: 510.16 },
+                // MAYO
+                { fecha: '2026-05-01', mes: 4, cliente: 'UVEALTO 2015- HOTEL SECRETS TIDES', presupuesto: '23006421', linea: 'HPS', producto: 'PRODUCTOS HPS', monto: 11866.44 },
+                { fecha: '2026-05-04', mes: 4, cliente: 'DOMINICANOTEL - HOTEL SENATOR', presupuesto: '23005906', linea: '', producto: '', monto: 1137.75 },
+                { fecha: '2026-05-04', mes: 4, cliente: 'DOMINICANOTEL - HOTEL SENATOR', presupuesto: '23006587', linea: '', producto: '', monto: 1489.04 },
+                { fecha: '2026-05-05', mes: 4, cliente: 'CORAL GULF ASSETS- HOTEL ST. REGIS', presupuesto: '23006572', linea: 'HPS', producto: 'PROYECTO ST. REGIS CAP CANA', monto: 1137.54 },
+                { fecha: '2026-05-06', mes: 4, cliente: 'INVERSIONES OCRE ROJO', presupuesto: '23006564', linea: 'HPS', producto: 'PRODUCTOS HPS', monto: 43081.62 },
+                { fecha: '2026-05-08', mes: 4, cliente: 'JABAQUE INVERSIONES SAS - HOTEL W PUNTA CANA', presupuesto: '', linea: '', producto: '', monto: 5964.02 },
+                { fecha: '2026-05-08', mes: 4, cliente: 'BLUE DOWNTOWN HOTEL PC SRL', presupuesto: '23006651', linea: '', producto: '', monto: 14547.00 },
+                { fecha: '2026-05-09', mes: 4, cliente: 'DKLIC PLUS INVESTMENT SRL', presupuesto: '23006677', linea: '', producto: '', monto: 24.30 }
+            ];
+            guardarIngresos();
+        }
+        function guardarIngresos() { localStorage.setItem(STORAGE_KEY_ING, JSON.stringify(ingresos)); }
+
+        function filtrarPorMes(mes) { return ingresos.filter(t => t.mes === mes); }
+        function calcularKPIsMes(mes) {
+            const tx = filtrarPorMes(mes);
+            const total = tx.reduce((s, t) => s + t.monto, 0);
+            const hps = tx.filter(t => t.linea === 'HPS').reduce((s, t) => s + t.monto, 0);
+            const imp = tx.filter(t => t.linea === 'IMPORT').reduce((s, t) => s + t.monto, 0);
+            const sinClasif = tx.filter(t => !t.linea || t.linea === '').reduce((s, t) => s + t.monto, 0);
+            return {
+                total, hps, imp, sinClasif,
+                cantTotal: tx.length,
+                cumplimiento: META_MENSUAL > 0 ? (total / META_MENSUAL * 100) : 0
+            };
+        }
+
+        let currentView = 'monthly';
+        function setActiveView(view, month = null) {
+            document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.sidebar-nav button').forEach(b => b.classList.remove('active'));
+            if (view === 'monthly' && month !== null) {
+                currentMonth = month;
+                document.getElementById('view-monthly').classList.add('active');
+                document.querySelector(`[data-view="monthly"][data-month="${month}"]`).classList.add('active');
+                renderizarMes(month);
+            } else if (view === 'annual') {
+                document.getElementById('view-annual').classList.add('active');
+                document.querySelector('[data-view="annual"]').classList.add('active');
+                renderizarAnual();
+            } else {
+                document.getElementById('view-dashboard').classList.add('active');
+                document.querySelector('[data-view="dashboard"]').classList.add('active');
+                renderizarDashboard();
+            }
+            currentView = view;
+        }
+
+        function renderizarMes(mes) {
+            const kpi = calcularKPIsMes(mes);
+            document.getElementById('monthTitle').textContent = `${MESES[mes]} 2026`;
+            document.getElementById('metaBadge').textContent = `Meta: $${META_MENSUAL.toLocaleString()}`;
+            const esAdmin = usuarioActual && usuarioActual.rol === 'admin';
+            document.getElementById('formIngreso').style.display = esAdmin ? 'block' : 'none';
+            document.getElementById('kpiMonth').innerHTML = `
+                <div class="kpi-card"><div class="kpi-label">Total Ingresos</div><div class="kpi-value">$${kpi.total.toLocaleString(undefined,{minimumFractionDigits:2})}</div></div>
+                <div class="kpi-card"><div class="kpi-label">Ingresos HPS</div><div class="kpi-value">$${kpi.hps.toLocaleString()}</div></div>
+                <div class="kpi-card"><div class="kpi-label">Ingresos IMPORT</div><div class="kpi-value">$${kpi.imp.toLocaleString()}</div></div>
+                <div class="kpi-card ${kpi.cumplimiento>=100?'success':'danger'}"><div class="kpi-label">Cumplimiento Meta</div><div class="kpi-value">${kpi.cumplimiento.toFixed(1)}%</div></div>
+            `;
+            const ctx1 = document.getElementById('chartHPSImport').getContext('2d');
+            if (window._chartHPSImport) window._chartHPSImport.destroy();
+            window._chartHPSImport = new Chart(ctx1, {
+                type: 'doughnut',
+                data: { labels: ['HPS','IMPORT','Sin clasificar'], datasets: [{ data: [kpi.hps, kpi.imp, kpi.sinClasif], backgroundColor: ['#1a3c5e','#e8873a','#cccccc'] }] },
+                options: { responsive: true }
+            });
+            // Gráfico diario
+            const tx = filtrarPorMes(mes);
+            const dias = {};
+            tx.forEach(t => { const d = t.fecha.substring(8,10); dias[d] = (dias[d]||0) + t.monto; });
+            const sortedDias = Object.entries(dias).sort((a,b)=>parseInt(a[0])-parseInt(b[0]));
+            const ctx2 = document.getElementById('chartDiario').getContext('2d');
+            if (window._chartDiario) window._chartDiario.destroy();
+            window._chartDiario = new Chart(ctx2, {
+                type: 'bar',
+                data: { labels: sortedDias.map(d=>`Día ${d[0]}`), datasets: [{ data: sortedDias.map(d=>d[1]), backgroundColor: '#2c5f8a' }] },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+            // Tabla
+            let html = `<table><tr><th>Fecha</th><th>Cliente</th><th>Presupuesto</th><th>Línea</th><th>Producto/S</th><th>Monto</th>${esAdmin?'<th></th>':''}</tr>`;
+            tx.forEach((t, i) => {
+                html += `<tr>
+                    <td>${t.fecha}</td><td>${t.cliente}</td><td>${t.presupuesto}</td><td>${t.linea||'-'}</td><td>${t.producto||'-'}</td><td>$${t.monto.toFixed(2)}</td>
+                    ${esAdmin?`<td><button class="btn btn-sm" style="background:#c62828;color:#fff;" onclick="eliminarIngreso(${i})">X</button></td>`:''}
+                </tr>`;
+            });
+            html += '</table>';
+            document.getElementById('tablaIngresos').innerHTML = html;
+        }
+
+        window.eliminarIngreso = function(index) {
+            if (!usuarioActual || usuarioActual.rol !== 'admin') return;
+            ingresos.splice(index, 1);
+            guardarIngresos();
+            renderizarMes(currentMonth);
+        };
+        window.guardarIngreso = function() {
+            if (!usuarioActual || usuarioActual.rol !== 'admin') return;
+            const fecha = document.getElementById('ingFecha').value;
+            const mes = new Date(fecha + 'T00:00:00').getMonth();
+            const nuevo = {
+                fecha, mes, cliente: document.getElementById('ingCliente').value,
+                presupuesto: document.getElementById('ingPresupuesto').value,
+                linea: document.getElementById('ingLinea').value,
+                producto: document.getElementById('ingProducto').value,
+                monto: parseFloat(document.getElementById('ingMonto').value) || 0
+            };
+            ingresos.push(nuevo);
+            guardarIngresos();
+            renderizarMes(currentMonth);
+            limpiarFormIngreso();
+        };
+        window.limpiarFormIngreso = function() {
+            document.getElementById('ingFecha').value = ''; document.getElementById('ingCliente').value = '';
+            document.getElementById('ingPresupuesto').value = ''; document.getElementById('ingProducto').value = '';
+            document.getElementById('ingMonto').value = '';
+        };
+
+        function renderizarAnual() {
+            let total = 0, totalHPS = 0, totalIMP = 0;
+            const clientes = {};
+            const porMes = Array(12).fill(0);
+            const hpsPorMes = Array(12).fill(0);
+            const impPorMes = Array(12).fill(0);
+            ingresos.forEach(t => {
+                total += t.monto;
+                porMes[t.mes] += t.monto;
+                if (t.linea === 'HPS') { totalHPS += t.monto; hpsPorMes[t.mes] += t.monto; }
+                else if (t.linea === 'IMPORT') { totalIMP += t.monto; impPorMes[t.mes] += t.monto; }
+                clientes[t.cliente] = (clientes[t.cliente] || 0) + t.monto;
+            });
+            const cumplimiento = META_ANUAL > 0 ? (total / META_ANUAL * 100) : 0;
+            document.getElementById('kpiAnnual').innerHTML = `
+                <div class="kpi-card"><div class="kpi-label">Total Ingresos</div><div class="kpi-value">$${total.toLocaleString()}</div></div>
+                <div class="kpi-card"><div class="kpi-label">Ingresos HPS</div><div class="kpi-value">$${totalHPS.toLocaleString()}</div></div>
+                <div class="kpi-card"><div class="kpi-label">Ingresos IMPORT</div><div class="kpi-value">$${totalIMP.toLocaleString()}</div></div>
+                <div class="kpi-card ${cumplimiento>=100?'success':'danger'}"><div class="kpi-label">Cumplimiento Meta</div><div class="kpi-value">${cumplimiento.toFixed(1)}%</div></div>
+            `;
+            const ctx1 = document.getElementById('chartEvolucion').getContext('2d');
+            if (window._chartEvolucion) window._chartEvolucion.destroy();
+            window._chartEvolucion = new Chart(ctx1, {
+                type: 'line',
+                data: { labels: MESES, datasets: [{ label: 'Ingresos', data: porMes, borderColor: '#1a3c5e', fill: false }, { label: 'Meta Mensual', data: Array(12).fill(META_MENSUAL), borderColor: '#c62828', borderDash: [5], fill: false }] },
+                options: { responsive: true }
+            });
+            const ctx2 = document.getElementById('chartHPSImportMensual').getContext('2d');
+            if (window._chartHPSImportMensual) window._chartHPSImportMensual.destroy();
+            window._chartHPSImportMensual = new Chart(ctx2, {
+                type: 'bar',
+                data: { labels: MESES, datasets: [{ label: 'HPS', data: hpsPorMes, backgroundColor: '#1a3c5e' }, { label: 'IMPORT', data: impPorMes, backgroundColor: '#e8873a' }] },
+                options: { responsive: true, scales: { x: { stacked: true }, y: { stacked: true } } }
+            });
+            // Top clientes
+            const sorted = Object.entries(clientes).sort((a,b)=>b[1]-a[1]).slice(0,15);
+            let html = '<table><tr><th>Cliente</th><th>Total Ingresos</th></tr>';
+            sorted.forEach(([c,v]) => html += `<tr><td>${c}</td><td>$${v.toLocaleString()}</td></tr>`);
+            html += '</table>';
+            document.getElementById('tablaClientes').innerHTML = html;
+        }
+
+        function renderizarDashboard() {
+            let total = 0, totalHPS = 0, totalIMP = 0;
+            ingresos.forEach(t => {
+                total += t.monto;
+                if (t.linea === 'HPS') totalHPS += t.monto;
+                else if (t.linea === 'IMPORT') totalIMP += t.monto;
+            });
+            const cumplimiento = META_ANUAL > 0 ? (total / META_ANUAL * 100) : 0;
+            const mejorMes = Array(12).fill(0).map((_,i) => filtrarPorMes(i).reduce((s,t)=>s+t.monto,0));
+            const mejor = Math.max(...mejorMes);
+            const mejorMesIdx = mejorMes.indexOf(mejor);
+            document.getElementById('kpiDashboard').innerHTML = `
+                <div class="kpi-card"><div class="kpi-label">Total Ingresos</div><div class="kpi-value">$${total.toLocaleString()}</div></div>
+                <div class="kpi-card accent"><div class="kpi-label">HPS</div><div class="kpi-value">$${totalHPS.toLocaleString()}</div></div>
+                <div class="kpi-card info"><div class="kpi-label">IMPORT</div><div class="kpi-value">$${totalIMP.toLocaleString()}</div></div>
+                <div class="kpi-card ${cumplimiento>=100?'success':'danger'}"><div class="kpi-label">Cumplimiento Meta</div><div class="kpi-value">${cumplimiento.toFixed(1)}%</div></div>
+                <div class="kpi-card"><div class="kpi-label">Mejor Mes</div><div class="kpi-value">${MESES[mejorMesIdx]}</div><div class="kpi-sub">$${mejor.toLocaleString()}</div></div>
+            `;
+            const ctx1 = document.getElementById('chartMeta').getContext('2d');
+            if (window._chartMeta) window._chartMeta.destroy();
+            window._chartMeta = new Chart(ctx1, { type: 'bar', data: { labels: ['Real','Meta'], datasets: [{ data: [total, META_ANUAL], backgroundColor: ['#2e7d32','#1565c0'] }] }, options: { responsive: true, plugins: { legend: { display: false } } } });
+            const ctx2 = document.getElementById('chartDistribucion').getContext('2d');
+            if (window._chartDistribucion) window._chartDistribucion.destroy();
+            window._chartDistribucion = new Chart(ctx2, { type: 'pie', data: { labels: ['HPS','IMPORT','Sin clasificar'], datasets: [{ data: [totalHPS, totalIMP, total-totalHPS-totalIMP], backgroundColor: ['#1a3c5e','#e8873a','#cccccc'] }] }, options: { responsive: true } });
+        }
+
+        window.iniciarSesion = function() {
+            const u = document.getElementById('loginUsername').value.trim();
+            const p = document.getElementById('loginPassword').value;
+            const err = document.getElementById('loginError'); err.textContent = '';
+            const user = USUARIOS[u.toLowerCase()];
+            if (!user || user.password !== p) { err.textContent = 'Credenciales incorrectas.'; return; }
+            usuarioActual = user;
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('sidebar').style.display = 'flex';
+            document.getElementById('mainContent').style.display = 'block';
+            document.getElementById('loggedUserLabel').textContent = user.nombre;
+            inicializarDatos();
+            setActiveView('monthly', 0);
+        };
+        window.cerrarSesion = function() {
+            usuarioActual = null;
+            document.getElementById('loginOverlay').style.display = 'flex';
+            document.getElementById('sidebar').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'none';
+        };
+        document.querySelectorAll('.sidebar-nav button[data-view]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const view = this.dataset.view;
+                const month = this.dataset.month !== undefined ? parseInt(this.dataset.month) : null;
+                setActiveView(view, month);
+            });
+        });
+    </script>
+</body>
+</html>
