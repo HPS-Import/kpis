@@ -28,7 +28,7 @@
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family:var(--font); background:var(--bg); color:var(--text); display:flex; min-height:100vh; }
         .login-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:linear-gradient(135deg, #1a3c5e, #2c5f8a); display:flex; align-items:center; justify-content:center; z-index:9999; }
-        .login-card { background:#fff; border-radius:var(--radius); padding:40px 32px; box-shadow:0 8px 32px rgba(0,0,0,0.1); width:360px; max-width:90%; text-align:center; }
+        .login-card { background:#fff; border-radius:var(--radius); padding:40px 32px; box-shadow:0 8px 32px rgba(0,0,0,0.1); width:360px; text-align:center; }
         .login-card h2 { font-size:1.4rem; color:var(--primary); margin-bottom:6px; }
         .login-card .subtitle { font-size:0.8rem; color:var(--text-secondary); margin-bottom:24px; }
         .login-card input { width:100%; padding:12px; margin-bottom:12px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:0.9rem; }
@@ -57,31 +57,22 @@
         .kpi-card { background:#fff; border-radius:var(--radius); padding:20px; box-shadow:var(--shadow); border:1px solid var(--border); }
         .kpi-label { font-size:0.75rem; text-transform:uppercase; color:var(--text-secondary); font-weight:600; }
         .kpi-value { font-size:1.8rem; font-weight:700; color:var(--primary); }
-        .kpi-sub { font-size:0.78rem; color:var(--text-secondary); }
         .charts-row { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:24px; }
         @media (max-width:1000px) { .charts-row { grid-template-columns:1fr; } }
         .chart-card { background:#fff; border-radius:var(--radius); padding:20px; box-shadow:var(--shadow); border:1px solid var(--border); }
         .chart-card h3 { font-size:0.9rem; font-weight:700; color:var(--primary); margin-bottom:14px; }
         canvas { max-height:300px; }
         .form-card { background:#fff; border-radius:var(--radius); padding:24px; box-shadow:var(--shadow); border:1px solid var(--border); margin-bottom:20px; }
-        .form-section-title { font-weight:700; font-size:0.82rem; color:var(--primary); margin-top:12px; padding-top:8px; border-top:1px solid var(--border); }
         .form-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:14px; }
         .form-group { display:flex; flex-direction:column; gap:4px; }
         .form-group label { font-size:0.75rem; font-weight:600; color:var(--text-secondary); }
-        .form-group input { padding:10px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:0.9rem; }
+        .form-group input, .form-group select { padding:10px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:0.9rem; }
         .table-wrapper { overflow-x:auto; }
         table { width:100%; border-collapse:collapse; font-size:0.82rem; }
         th, td { padding:10px 12px; text-align:right; border-bottom:1px solid var(--border); }
         th { background:#f7f8fa; font-weight:700; color:var(--primary); font-size:0.7rem; }
         td:first-child, th:first-child { text-align:left; font-weight:600; }
-        @media print {
-            body { background:#fff; font-size:11px; }
-            .sidebar, .btn-row, .toast, button:not(.keep-print), .no-print { display:none!important; }
-            .main { margin-left:0!important; padding:10px!important; }
-            .view-panel { display:none!important; }
-            .view-panel.active { display:block!important; }
-            .form-card, .chart-card, .kpi-card { box-shadow:none; border:1px solid #ccc; }
-        }
+        @media print { .sidebar, .btn, .toast, .no-print { display:none!important; } .main { margin-left:0!important; padding:10px!important; } }
     </style>
 </head>
 <body>
@@ -123,94 +114,158 @@
     <main class="main" id="mainContent" style="display:none;">
         <div class="view-panel active" id="view-monthly">
             <div class="topbar"><h1 id="monthTitle"></h1><div><span class="badge" id="metaBadge"></span><button class="btn btn-print btn-sm keep-print" onclick="imprimirVista()">Imprimir</button></div></div>
-            <div class="form-card no-print" id="formEdicion" style="display:none;">
-                <h3>Editar Totales del Mes</h3>
+            <div class="form-card no-print" id="formTransaccion" style="display:none;">
+                <h3>Agregar / Editar Transacción</h3>
                 <div class="form-grid">
-                    <div class="form-group"><label>HPS Bruto (USD)</label><input type="number" id="hpsBruto" step="0.01"></div>
-                    <div class="form-group"><label>HPS Neto (USD)</label><input type="number" id="hpsNeto" step="0.01"></div>
-                    <div class="form-group"><label>Import Bruto (USD)</label><input type="number" id="impBruto" step="0.01"></div>
-                    <div class="form-group"><label>Import Neto (USD)</label><input type="number" id="impNeto" step="0.01"></div>
-                    <div class="form-group"><label>Transacciones Totales</label><input type="number" id="totalTrans" step="1"></div>
-                    <div class="form-group"><label>Transacciones Aprobadas</label><input type="number" id="aprobadas" step="1"></div>
+                    <div class="form-group"><label>Fecha</label><input type="date" id="txFecha"></div>
+                    <div class="form-group"><label>Cliente</label><input type="text" id="txCliente"></div>
+                    <div class="form-group"><label>Tipo</label><select id="txTipo"><option value="HPS">HPS</option><option value="IMPORT">IMPORT</option></select></div>
+                    <div class="form-group"><label>Presupuesto</label><input type="text" id="txPresupuesto"></div>
+                    <div class="form-group"><label>I. Neto (USD)</label><input type="number" id="txNeto" step="0.01" onchange="calcularBruto()"></div>
+                    <div class="form-group"><label>Impuesto (USD)</label><input type="number" id="txImpuesto" step="0.01" readonly></div>
+                    <div class="form-group"><label>I. Bruto (USD)</label><input type="number" id="txBruto" step="0.01" readonly></div>
+                    <div class="form-group"><label>Servicio/Producto</label><select id="txServProd"><option value="S">Servicio (S)</option><option value="P">Producto (P)</option></select></div>
+                    <div class="form-group"><label>Estatus</label><select id="txEstatus"><option value="APROBADO">APROBADO</option><option value="NO APROBADO">NO APROBADO</option></select></div>
                 </div>
-                <div class="btn-row" style="margin-top:12px;display:flex;gap:10px;"><button class="btn btn-primary" onclick="guardarMes()">Guardar</button><button class="btn btn-accent" onclick="calcularYMostrar()">Ver Resumen</button></div>
+                <div class="btn-row" style="margin-top:12px;display:flex;gap:10px;"><button class="btn btn-primary" onclick="guardarTransaccion()">Guardar</button><button class="btn btn-accent" onclick="limpiarFormulario()">Nuevo</button></div>
             </div>
             <div class="kpi-grid" id="kpiMonth"></div>
             <div class="charts-row">
-                <div class="chart-card"><h3>Ingresos del Mes (USD)</h3><canvas id="chartMonthBars"></canvas></div>
-                <div class="chart-card"><h3>Tasa de Aprobación</h3><canvas id="chartAprobacionMes"></canvas></div>
+                <div class="chart-card"><h3>Productos vs Servicios (Aprobados)</h3><canvas id="chartProdServ"></canvas></div>
+                <div class="chart-card"><h3>HPS vs IMPORT (Aprobados)</h3><canvas id="chartHPSImport"></canvas></div>
             </div>
+            <div class="form-card"><h3>Transacciones del Mes</h3><div class="table-wrapper" id="tablaTransacciones"></div></div>
         </div>
         <div class="view-panel" id="view-annual">
             <div class="topbar"><h1>Total Anual 2026</h1><div><span class="badge">Meta: $1,250,000</span><button class="btn btn-print btn-sm keep-print" onclick="imprimirVista()">Imprimir</button></div></div>
             <div class="kpi-grid" id="kpiAnnual"></div>
             <div class="charts-row">
-                <div class="chart-card"><h3>Evolución Mensual de Ventas Netas</h3><canvas id="chartEvolucion"></canvas></div>
-                <div class="chart-card"><h3>Tasa de Aprobación Mensual</h3><canvas id="chartAprobAnual"></canvas></div>
+                <div class="chart-card"><h3>Productos vs Servicios (Año)</h3><canvas id="chartProdServAnual"></canvas></div>
+                <div class="chart-card"><h3>Presupuestos HPS vs IMPORT (Año)</h3><canvas id="chartHPSImportAnual"></canvas></div>
             </div>
-            <div class="form-card"><h3>Resumen por Mes</h3><div class="table-wrapper" id="tablaAnual"></div></div>
+            <div class="form-card"><h3>Top Clientes (Presupuestos Aprobados)</h3><div class="table-wrapper" id="tablaClientes"></div></div>
         </div>
         <div class="view-panel" id="view-dashboard">
             <div class="topbar"><h1>Dashboard KPIs</h1><button class="btn btn-print btn-sm keep-print" onclick="imprimirVista()">Imprimir</button></div>
             <div class="kpi-grid" id="kpiDashboard"></div>
             <div class="charts-row">
-                <div class="chart-card"><h3>Contribución HPS vs IMPORT</h3><canvas id="chartContribucion"></canvas></div>
                 <div class="chart-card"><h3>Cumplimiento de Meta</h3><canvas id="chartMeta"></canvas></div>
+                <div class="chart-card"><h3>Tasa de Aprobación Anual</h3><canvas id="chartAprobAnual"></canvas></div>
             </div>
         </div>
     </main>
 
     <script>
         window.imprimirVista = function() { window.print(); };
-        const USUARIOS = {
-            'admin': { password: 'admin123', rol: 'admin', nombre: 'Administrador' },
-            'gerente': { password: 'gerente123', rol: 'admin', nombre: 'Gerente' },
-            'invitado': { password: 'invitado', rol: 'invitado', nombre: 'Invitado' }
-        };
+        const USUARIOS = { 'admin': { password: 'admin123', rol: 'admin', nombre: 'Administrador' }, 'gerente': { password: 'gerente123', rol: 'admin', nombre: 'Gerente' }, 'invitado': { password: 'invitado', rol: 'invitado', nombre: 'Invitado' } };
         let usuarioActual = null;
         const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
         const META_ANUAL = 1250000;
         const META_MENSUAL = META_ANUAL / 12;
-        const STORAGE_KEY = 'ventas_2026_data';
-        let datosMensuales = [];
-
-        function initDatos() {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                try { datosMensuales = JSON.parse(saved); if (datosMensuales.length !== 12) throw new Error(); }
-                catch(e) { crearDatosIniciales(); }
-            } else { crearDatosIniciales(); }
-        }
-        function crearDatosIniciales() {
-            datosMensuales = Array.from({length:12}, () => ({ hpsBruto:0, hpsNeto:0, impBruto:0, impNeto:0, totalTrans:0, aprobadas:0 }));
-            // Precargar enero a abril desde archivo
-            datosMensuales[0] = { hpsBruto: 79208.06, hpsNeto: 67125.47, impBruto: 83204.50, impNeto: 70512.29, totalTrans: 33, aprobadas: 33 };
-            datosMensuales[1] = { hpsBruto: 94903.02, hpsNeto: 80426.29, impBruto: 11542.46, impNeto: 9782.17, totalTrans: 39, aprobadas: 39 };
-            datosMensuales[2] = { hpsBruto: 469903.95, hpsNeto: 398223.69, impBruto: 48986.18, impNeto: 41513.71, totalTrans: 50, aprobadas: 50 };
-            datosMensuales[3] = { hpsBruto: 24439.32, hpsNeto: 20711.29, impBruto: 10395.64, impNeto: 8810.71, totalTrans: 42, aprobadas: 42 };
-            guardarDatos();
-        }
-        function guardarDatos() { localStorage.setItem(STORAGE_KEY, JSON.stringify(datosMensuales)); }
-
-        function calcularKpiMes(mes) {
-            const d = datosMensuales[mes];
-            const totalBruto = (d.hpsBruto||0) + (d.impBruto||0);
-            const totalNeto = (d.hpsNeto||0) + (d.impNeto||0);
-            const tasaAprob = d.totalTrans > 0 ? (d.aprobadas/d.totalTrans*100) : 0;
-            const cumplimiento = META_MENSUAL > 0 ? (totalNeto/META_MENSUAL*100) : 0;
-            return {...d, totalBruto, totalNeto, tasaAprob, cumplimiento};
-        }
-
+        const STORAGE_KEY_TRANS = 'ventas_2026_transacciones';
+        let transacciones = [];
         let currentMonth = 0;
-        function setActiveView(view, month=null) {
-            document.querySelectorAll('.view-panel').forEach(p=>p.classList.remove('active'));
-            document.querySelectorAll('.sidebar-nav button').forEach(b=>b.classList.remove('active'));
-            if (view==='monthly' && month!==null) {
+
+        function inicializarDatos() {
+            const saved = localStorage.getItem(STORAGE_KEY_TRANS);
+            if (saved) { transacciones = JSON.parse(saved); }
+            else { precargarTransacciones(); }
+        }
+        function precargarTransacciones() {
+            // Datos extraídos del archivo (ENERO a ABRIL aprobados + algunos no aprobados)
+            transacciones = [
+                { fecha: '2026-01-06', mes: 0, cliente: 'HOTEL OCEAN FRONT', tipo: 'HPS', presupuesto: '23006008', neto: 679.99, impuesto: 122.40, bruto: 802.39, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-06', mes: 0, cliente: 'HOTEL CASA MARINA REEF', tipo: 'HPS', presupuesto: '23005826', neto: 1434.00, impuesto: 258.12, bruto: 1692.12, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-06', mes: 0, cliente: 'HOTEL SECRETS CAP CANA', tipo: 'HPS', presupuesto: '23006044', neto: 550.80, impuesto: 99.14, bruto: 649.94, servProd: 'S', estatus: 'APROBADO' },
+                { fecha: '2026-01-06', mes: 0, cliente: 'HOTEL SENATOR PUERTO PLATA', tipo: 'HPS', presupuesto: '23006045', neto: 447.93, impuesto: 80.63, bruto: 528.56, servProd: 'S', estatus: 'APROBADO' },
+                { fecha: '2026-01-06', mes: 0, cliente: 'HOTEL EL BARCO', tipo: 'HPS', presupuesto: '23006048', neto: 672.80, impuesto: 121.10, bruto: 793.90, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-06', mes: 0, cliente: 'HOTEL KIMPTON LAS MERCEDES', tipo: 'HPS', presupuesto: '23006053', neto: 3430.00, impuesto: 617.40, bruto: 4047.40, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-06', mes: 0, cliente: 'HOTEL W PUNTA CANA', tipo: 'HPS', presupuesto: '23005245', neto: 3000.00, impuesto: 540.00, bruto: 3540.00, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-06', mes: 0, cliente: 'VIVA INTERNATIONAL', tipo: 'HPS', presupuesto: '23006026', neto: 95.00, impuesto: 17.10, bruto: 112.10, servProd: 'S', estatus: 'APROBADO' },
+                { fecha: '2026-01-07', mes: 0, cliente: 'HOTEL W PUNTA CANA', tipo: 'HPS', presupuesto: '23006061', neto: 475.00, impuesto: 85.50, bruto: 560.50, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-07', mes: 0, cliente: 'HOTEL W PUNTA CANA', tipo: 'HPS', presupuesto: '23006062', neto: 573.14, impuesto: 103.17, bruto: 676.31, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-07', mes: 0, cliente: 'HOTEL HARD ROCK PUNTA CANA', tipo: 'HPS', presupuesto: '23005927', neto: 17126.00, impuesto: 3082.68, bruto: 20208.68, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-13', mes: 0, cliente: 'HOTEL ZEMI MICHES', tipo: 'HPS', presupuesto: '23006072', neto: 752.00, impuesto: 135.36, bruto: 887.36, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-13', mes: 0, cliente: 'HACIENDA SAMANA BAY', tipo: 'HPS', presupuesto: '23006073', neto: 249.00, impuesto: 44.82, bruto: 293.82, servProd: 'S', estatus: 'APROBADO' },
+                { fecha: '2026-01-14', mes: 0, cliente: 'HOTEL OCEAN BLUE AND SAND', tipo: 'HPS', presupuesto: '23006074', neto: 1039.49, impuesto: 187.11, bruto: 1226.60, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-14', mes: 0, cliente: 'HOTEL SECRETS AND DREAMS MICHES', tipo: 'HPS', presupuesto: '23006109', neto: 134.28, impuesto: 24.17, bruto: 158.45, servProd: 'S', estatus: 'APROBADO' },
+                { fecha: '2026-01-14', mes: 0, cliente: 'HOTEL SECRETS AND DREAMS MICHES', tipo: 'HPS', presupuesto: '23006108', neto: 205.00, impuesto: 36.90, bruto: 241.90, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-14', mes: 0, cliente: 'HOTEL SECRETS AND DREAMS MICHES', tipo: 'HPS', presupuesto: '23006107', neto: 3357.00, impuesto: 604.26, bruto: 3961.26, servProd: 'S', estatus: 'APROBADO' },
+                { fecha: '2026-01-14', mes: 0, cliente: 'HOTEL SECRETS AND DREAMS MICHES', tipo: 'HPS', presupuesto: '23006103', neto: 5125.00, impuesto: 922.50, bruto: 6047.50, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-15', mes: 0, cliente: 'HOTEL SENATOR PUERTO PLATA', tipo: 'HPS', presupuesto: '23006064', neto: 1290.00, impuesto: 232.20, bruto: 1522.20, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-15', mes: 0, cliente: 'HOTEL SENATOR PUERTO PLATA', tipo: 'HPS', presupuesto: '23006063', neto: 3390.54, impuesto: 610.30, bruto: 4000.84, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-19', mes: 0, cliente: 'HOTEL BARCELO BAVARO', tipo: 'HPS', presupuesto: '23006133', neto: 302.47, impuesto: 54.44, bruto: 356.91, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-19', mes: 0, cliente: 'HOTEL SPORTS ILLUSTRATED', tipo: 'HPS', presupuesto: '23006124', neto: 768.00, impuesto: 138.24, bruto: 906.24, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-20', mes: 0, cliente: 'HOTEL CASA MARINA REEF', tipo: 'HPS', presupuesto: '23006128', neto: 8235.25, impuesto: 1482.34, bruto: 9717.59, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-22', mes: 0, cliente: 'VIVA INTERNATIONAL', tipo: 'HPS', presupuesto: '23006059', neto: 145.65, impuesto: 26.22, bruto: 171.87, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-27', mes: 0, cliente: 'HOTEL ALOFT Y MARRIOTT', tipo: 'HPS', presupuesto: '23006156', neto: 474.00, impuesto: 85.32, bruto: 559.32, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-28', mes: 0, cliente: 'HOTEL SENATOR PUERTO PLATA', tipo: 'HPS', presupuesto: '23006113', neto: 630.95, impuesto: 113.57, bruto: 744.52, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-28', mes: 0, cliente: 'HOTEL SECRETS AND DREAMS MICHES', tipo: 'HPS', presupuesto: '23006009', neto: 8482.00, impuesto: 1526.76, bruto: 10008.76, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-28', mes: 0, cliente: 'HOTEL EL BARCO', tipo: 'HPS', presupuesto: '23006162', neto: 95.00, impuesto: 17.10, bruto: 112.10, servProd: 'S', estatus: 'APROBADO' },
+                { fecha: '2026-01-30', mes: 0, cliente: 'HOTEL HARD ROCK PUNTA CANA', tipo: 'HPS', presupuesto: '23005376', neto: 348.42, impuesto: 62.71, bruto: 411.13, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-30', mes: 0, cliente: 'HOTEL BILLINI', tipo: 'HPS', presupuesto: '23006172', neto: 256.00, impuesto: 46.08, bruto: 302.08, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-30', mes: 0, cliente: 'HOTEL WYNDHAM ALLTRA SAMANA', tipo: 'HPS', presupuesto: '23006157', neto: 1280.00, impuesto: 230.40, bruto: 1510.40, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-30', mes: 0, cliente: 'CASA ARQUIDIOCESANA MARIA DE LA ALT.', tipo: 'HPS', presupuesto: '23006144', neto: 1783.53, impuesto: 321.04, bruto: 2104.57, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-30', mes: 0, cliente: 'CASA ARQUIDIOCESANA MARIA DE LA ALT.', tipo: 'HPS', presupuesto: '23006145', neto: 297.24, impuesto: 53.50, bruto: 350.74, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-06', mes: 0, cliente: 'DOMINICAN DEVELOPMENT', tipo: 'IMPORT', presupuesto: '23005962', neto: 1223.79, impuesto: 220.28, bruto: 1444.07, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-06', mes: 0, cliente: 'CONSTRUCTORA JOHANN REYES M.', tipo: 'IMPORT', presupuesto: '23005947', neto: 2367.08, impuesto: 426.08, bruto: 2793.16, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-13', mes: 0, cliente: 'GRUPO ARHE SRL', tipo: 'IMPORT', presupuesto: '23005633', neto: 2565.70, impuesto: 461.83, bruto: 3027.53, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-22', mes: 0, cliente: 'GLOBAL SPACE TRADING', tipo: 'IMPORT', presupuesto: '23006139', neto: 1323.19, impuesto: 238.17, bruto: 1561.36, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-22', mes: 0, cliente: 'CONSTRUCTORA DOVARCO', tipo: 'IMPORT', presupuesto: '23006149', neto: 130.11, impuesto: 23.42, bruto: 153.53, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-27', mes: 0, cliente: 'ATLAMBAR MANAGEMENT', tipo: 'IMPORT', presupuesto: '23006150', neto: 19823.19, impuesto: 3568.17, bruto: 23391.36, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-28', mes: 0, cliente: 'PANTALEON SALCEDO', tipo: 'IMPORT', presupuesto: '23005918', neto: 42905.95, impuesto: 7723.07, bruto: 50629.02, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-01-30', mes: 0, cliente: 'ALIBEY DEL CARIBE', tipo: 'IMPORT', presupuesto: '23003813', neto: 173.28, impuesto: 31.19, bruto: 204.47, servProd: 'P', estatus: 'APROBADO' },
+                // Febrero (abreviado)
+                { fecha: '2026-02-02', mes: 1, cliente: 'HOTEL SECRETS CAP CANA', tipo: 'HPS', presupuesto: '23006215', neto: 550.80, impuesto: 99.14, bruto: 649.94, servProd: 'S', estatus: 'APROBADO' },
+                { fecha: '2026-02-02', mes: 1, cliente: 'HOTEL SENATOR PUERTO PLATA', tipo: 'HPS', presupuesto: '23006216', neto: 447.93, impuesto: 80.63, bruto: 528.56, servProd: 'S', estatus: 'APROBADO' },
+                { fecha: '2026-02-02', mes: 1, cliente: 'HOTEL BILLINI', tipo: 'HPS', presupuesto: '23006220', neto: 1374.62, impuesto: 247.43, bruto: 1622.05, servProd: 'S', estatus: 'APROBADO' },
+                { fecha: '2026-02-03', mes: 1, cliente: 'HOTEL BREATHLESS PUNTA CANA', tipo: 'HPS', presupuesto: '23006211', neto: 7919.99, impuesto: 1425.60, bruto: 9345.59, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-02-04', mes: 1, cliente: 'HOTEL W PUNTA CANA', tipo: 'HPS', presupuesto: '23006235', neto: 3494.20, impuesto: 628.96, bruto: 4123.16, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-02-13', mes: 1, cliente: 'CONSTRUCTORA DOVARCO', tipo: 'IMPORT', presupuesto: '23006248', neto: 4037.86, impuesto: 726.81, bruto: 4764.67, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-02-23', mes: 1, cliente: 'ING360 SRL', tipo: 'IMPORT', presupuesto: '23006308', neto: 600.13, impuesto: 108.02, bruto: 708.15, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-02-24', mes: 1, cliente: 'CONSTRUCTORA AYBAR', tipo: 'IMPORT', presupuesto: '23006251', neto: 5144.19, impuesto: 925.95, bruto: 6070.14, servProd: 'P', estatus: 'APROBADO' },
+                // Marzo (abreviado)
+                { fecha: '2026-03-01', mes: 2, cliente: 'HOTEL DREAMS MACAO', tipo: 'HPS', presupuesto: '23006335', neto: 1280.00, impuesto: 230.40, bruto: 1510.40, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-03-04', mes: 2, cliente: 'HABITA GROUP GDC', tipo: 'IMPORT', presupuesto: '23006296', neto: 1571.47, impuesto: 282.86, bruto: 1854.33, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-03-13', mes: 2, cliente: 'INVERSIONES ABEY', tipo: 'IMPORT', presupuesto: '23006431', neto: 36687.57, impuesto: 6603.76, bruto: 43291.33, servProd: 'P', estatus: 'APROBADO' },
+                // Abril (algunos)
+                { fecha: '2026-04-01', mes: 3, cliente: 'HOTEL COURTYARD MAXIMO GOMEZ', tipo: 'HPS', presupuesto: '23006492', neto: 263.73, impuesto: 47.47, bruto: 311.20, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-04-14', mes: 3, cliente: 'ATLAMBAR MANEGEMENT', tipo: 'IMPORT', presupuesto: '23006562', neto: 6954.54, impuesto: 1251.82, bruto: 8206.36, servProd: 'P', estatus: 'APROBADO' },
+                { fecha: '2026-04-15', mes: 3, cliente: 'SANS SOUCI PORTS', tipo: 'IMPORT', presupuesto: '23006417', neto: 6871.18, impuesto: 1236.81, bruto: 8107.99, servProd: 'P', estatus: 'APROBADO' }
+            ];
+            guardarTransacciones();
+        }
+        function guardarTransacciones() { localStorage.setItem(STORAGE_KEY_TRANS, JSON.stringify(transacciones)); }
+
+        function filtrarPorMes(mes) { return transacciones.filter(t => t.mes === mes); }
+        function calcularKPIsMes(mes) {
+            const tx = filtrarPorMes(mes);
+            const aprobadas = tx.filter(t => t.estatus === 'APROBADO');
+            const totalNeto = aprobadas.reduce((s, t) => s + t.neto, 0);
+            const totalBruto = aprobadas.reduce((s, t) => s + t.bruto, 0);
+            const prod = aprobadas.filter(t => t.servProd === 'P');
+            const serv = aprobadas.filter(t => t.servProd === 'S');
+            const totalProd = prod.reduce((s, t) => s + t.bruto, 0);
+            const totalServ = serv.reduce((s, t) => s + t.bruto, 0);
+            return {
+                totalNeto, totalBruto, totalProd, totalServ,
+                cantProd: prod.length, cantServ: serv.length,
+                cantAprobadas: aprobadas.length, cantTotal: tx.length,
+                tasaAprob: tx.length > 0 ? (aprobadas.length / tx.length * 100) : 0,
+                cumplimiento: META_MENSUAL > 0 ? (totalNeto / META_MENSUAL * 100) : 0
+            };
+        }
+
+        let currentView = 'monthly';
+        function setActiveView(view, month = null) {
+            document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.sidebar-nav button').forEach(b => b.classList.remove('active'));
+            if (view === 'monthly' && month !== null) {
                 currentMonth = month;
                 document.getElementById('view-monthly').classList.add('active');
                 document.querySelector(`[data-view="monthly"][data-month="${month}"]`).classList.add('active');
                 renderizarMes(month);
-            } else if (view==='annual') {
+            } else if (view === 'annual') {
                 document.getElementById('view-annual').classList.add('active');
                 document.querySelector('[data-view="annual"]').classList.add('active');
                 renderizarAnual();
@@ -219,124 +274,132 @@
                 document.querySelector('[data-view="dashboard"]').classList.add('active');
                 renderizarDashboard();
             }
+            currentView = view;
         }
 
         function renderizarMes(mes) {
-            const kpi = calcularKpiMes(mes);
+            const kpi = calcularKPIsMes(mes);
             document.getElementById('monthTitle').textContent = `${MESES[mes]} 2026`;
             document.getElementById('metaBadge').textContent = `Meta: $${META_MENSUAL.toLocaleString()}`;
-            const esAdmin = usuarioActual && usuarioActual.rol==='admin';
-            document.getElementById('formEdicion').style.display = esAdmin ? 'block' : 'none';
-            if (esAdmin) {
-                document.getElementById('hpsBruto').value = kpi.hpsBruto||0;
-                document.getElementById('hpsNeto').value = kpi.hpsNeto||0;
-                document.getElementById('impBruto').value = kpi.impBruto||0;
-                document.getElementById('impNeto').value = kpi.impNeto||0;
-                document.getElementById('totalTrans').value = kpi.totalTrans||0;
-                document.getElementById('aprobadas').value = kpi.aprobadas||0;
-            }
+            const esAdmin = usuarioActual && usuarioActual.rol === 'admin';
+            document.getElementById('formTransaccion').style.display = esAdmin ? 'block' : 'none';
             document.getElementById('kpiMonth').innerHTML = `
-                <div class="kpi-card"><div class="kpi-label">Ventas Brutas</div><div class="kpi-value">$${kpi.totalBruto.toLocaleString(undefined,{minimumFractionDigits:2})}</div></div>
                 <div class="kpi-card"><div class="kpi-label">Ventas Netas</div><div class="kpi-value">$${kpi.totalNeto.toLocaleString(undefined,{minimumFractionDigits:2})}</div></div>
-                <div class="kpi-card"><div class="kpi-label">Tasa Aprobación</div><div class="kpi-value">${kpi.tasaAprob.toFixed(1)}%</div></div>
+                <div class="kpi-card"><div class="kpi-label">Productos (P)</div><div class="kpi-value">$${kpi.totalProd.toLocaleString()}</div><div class="kpi-sub">${kpi.cantProd} trans.</div></div>
+                <div class="kpi-card"><div class="kpi-label">Servicios (S)</div><div class="kpi-value">$${kpi.totalServ.toLocaleString()}</div><div class="kpi-sub">${kpi.cantServ} trans.</div></div>
                 <div class="kpi-card ${kpi.cumplimiento>=100?'success':'danger'}"><div class="kpi-label">Cumplimiento Meta</div><div class="kpi-value">${kpi.cumplimiento.toFixed(1)}%</div></div>
             `;
-            const ctx1 = document.getElementById('chartMonthBars').getContext('2d');
-            if (window._chartMonthBars) window._chartMonthBars.destroy();
-            window._chartMonthBars = new Chart(ctx1, {
-                type: 'bar',
-                data: { labels: ['HPS Bruto','HPS Neto','Import Bruto','Import Neto'],
-                        datasets: [{ data: [kpi.hpsBruto, kpi.hpsNeto, kpi.impBruto, kpi.impNeto],
-                                     backgroundColor: ['#1a3c5e','#2c5f8a','#e8873a','#f4a261'] }] },
-                options: { responsive:true, plugins:{legend:{display:false}} }
+            const ctx1 = document.getElementById('chartProdServ').getContext('2d');
+            if (window._chartProdServ) window._chartProdServ.destroy();
+            window._chartProdServ = new Chart(ctx1, { type: 'doughnut', data: { labels: ['Productos','Servicios'], datasets: [{ data: [kpi.cantProd, kpi.cantServ], backgroundColor: ['#1a3c5e','#e8873a'] }] }, options: { responsive: true } });
+            const ctx2 = document.getElementById('chartHPSImport').getContext('2d');
+            const aprobadas = filtrarPorMes(mes).filter(t => t.estatus === 'APROBADO');
+            const hps = aprobadas.filter(t => t.tipo === 'HPS');
+            const imp = aprobadas.filter(t => t.tipo === 'IMPORT');
+            if (window._chartHPSImport) window._chartHPSImport.destroy();
+            window._chartHPSImport = new Chart(ctx2, { type: 'pie', data: { labels: ['HPS','IMPORT'], datasets: [{ data: [hps.length, imp.length], backgroundColor: ['#2c5f8a','#f4a261'] }] }, options: { responsive: true } });
+            // Tabla de transacciones
+            const todas = filtrarPorMes(mes);
+            let html = `<table><tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Presupuesto</th><th>Neto</th><th>Bruto</th><th>S/P</th><th>Estatus</th>${esAdmin?'<th></th>':''}</tr>`;
+            todas.forEach((t, i) => {
+                html += `<tr>
+                    <td>${t.fecha}</td><td>${t.cliente}</td><td>${t.tipo}</td><td>${t.presupuesto}</td><td>$${t.neto.toFixed(2)}</td><td>$${t.bruto.toFixed(2)}</td><td>${t.servProd}</td><td>${t.estatus}</td>
+                    ${esAdmin?`<td><button class="btn btn-sm" style="background:#c62828;color:#fff;" onclick="eliminarTransaccion(${i})">X</button></td>`:''}
+                </tr>`;
             });
-            const ctx2 = document.getElementById('chartAprobacionMes').getContext('2d');
-            if (window._chartAprobacionMes) window._chartAprobacionMes.destroy();
-            window._chartAprobacionMes = new Chart(ctx2, {
-                type: 'doughnut',
-                data: { labels: ['Aprobadas','No Aprobadas'],
-                        datasets: [{ data: [kpi.aprobadas, Math.max(0,(kpi.totalTrans||0)-kpi.aprobadas)],
-                                     backgroundColor: ['#2e7d32','#e0e0e0'] }] },
-                options: { responsive:true }
-            });
+            html += '</table>';
+            document.getElementById('tablaTransacciones').innerHTML = html;
         }
 
-        window.guardarMes = function() {
-            if (!usuarioActual || usuarioActual.rol!=='admin') return;
-            const d = datosMensuales[currentMonth];
-            d.hpsBruto = parseFloat(document.getElementById('hpsBruto').value)||0;
-            d.hpsNeto = parseFloat(document.getElementById('hpsNeto').value)||0;
-            d.impBruto = parseFloat(document.getElementById('impBruto').value)||0;
-            d.impNeto = parseFloat(document.getElementById('impNeto').value)||0;
-            d.totalTrans = parseInt(document.getElementById('totalTrans').value)||0;
-            d.aprobadas = parseInt(document.getElementById('aprobadas').value)||0;
-            guardarDatos();
+        window.eliminarTransaccion = function(index) {
+            if (!usuarioActual || usuarioActual.rol !== 'admin') return;
+            transacciones.splice(index, 1);
+            guardarTransacciones();
             renderizarMes(currentMonth);
-            alert('Datos guardados correctamente.');
         };
-        window.calcularYMostrar = function() { guardarMes(); };
+        window.calcularBruto = function() {
+            const neto = parseFloat(document.getElementById('txNeto').value) || 0;
+            document.getElementById('txImpuesto').value = (neto * 0.18).toFixed(2);
+            document.getElementById('txBruto').value = (neto * 1.18).toFixed(2);
+        };
+        window.guardarTransaccion = function() {
+            if (!usuarioActual || usuarioActual.rol !== 'admin') return;
+            const fecha = document.getElementById('txFecha').value;
+            const mes = new Date(fecha + 'T00:00:00').getMonth();
+            const nueva = {
+                fecha, mes, cliente: document.getElementById('txCliente').value,
+                tipo: document.getElementById('txTipo').value,
+                presupuesto: document.getElementById('txPresupuesto').value,
+                neto: parseFloat(document.getElementById('txNeto').value) || 0,
+                impuesto: parseFloat(document.getElementById('txImpuesto').value) || 0,
+                bruto: parseFloat(document.getElementById('txBruto').value) || 0,
+                servProd: document.getElementById('txServProd').value,
+                estatus: document.getElementById('txEstatus').value
+            };
+            transacciones.push(nueva);
+            guardarTransacciones();
+            renderizarMes(currentMonth);
+            limpiarFormulario();
+        };
+        window.limpiarFormulario = function() {
+            document.getElementById('txFecha').value = ''; document.getElementById('txCliente').value = '';
+            document.getElementById('txPresupuesto').value = ''; document.getElementById('txNeto').value = '';
+            document.getElementById('txImpuesto').value = ''; document.getElementById('txBruto').value = '';
+        };
 
         function renderizarAnual() {
-            let acumBruto=0, acumNeto=0, totalTrans=0, totalAprob=0;
-            datosMensuales.forEach(d=>{ acumBruto+=(d.hpsBruto||0)+(d.impBruto||0); acumNeto+=(d.hpsNeto||0)+(d.impNeto||0); totalTrans+=d.totalTrans||0; totalAprob+=d.aprobadas||0; });
-            const tasaAprob = totalTrans>0?totalAprob/totalTrans*100:0;
-            const cumplimiento = META_ANUAL>0?acumNeto/META_ANUAL*100:0;
+            let totalNeto = 0, totalProd = 0, totalServ = 0, cantProd = 0, cantServ = 0, cantHPS = 0, cantIMP = 0;
+            const clientes = {};
+            transacciones.filter(t => t.estatus === 'APROBADO').forEach(t => {
+                totalNeto += t.neto;
+                if (t.servProd === 'P') { totalProd += t.bruto; cantProd++; }
+                else { totalServ += t.bruto; cantServ++; }
+                if (t.tipo === 'HPS') cantHPS++; else cantIMP++;
+                clientes[t.cliente] = (clientes[t.cliente] || 0) + t.bruto;
+            });
+            const cumplimiento = META_ANUAL > 0 ? (totalNeto / META_ANUAL * 100) : 0;
             document.getElementById('kpiAnnual').innerHTML = `
-                <div class="kpi-card"><div class="kpi-label">Ventas Brutas Acum.</div><div class="kpi-value">$${acumBruto.toLocaleString()}</div></div>
-                <div class="kpi-card"><div class="kpi-label">Ventas Netas Acum.</div><div class="kpi-value">$${acumNeto.toLocaleString()}</div></div>
-                <div class="kpi-card info"><div class="kpi-label">Tasa Aprobación</div><div class="kpi-value">${tasaAprob.toFixed(1)}%</div></div>
+                <div class="kpi-card"><div class="kpi-label">Ventas Netas</div><div class="kpi-value">$${totalNeto.toLocaleString()}</div></div>
+                <div class="kpi-card"><div class="kpi-label">Productos (P)</div><div class="kpi-value">$${totalProd.toLocaleString()}</div></div>
+                <div class="kpi-card"><div class="kpi-label">Servicios (S)</div><div class="kpi-value">$${totalServ.toLocaleString()}</div></div>
                 <div class="kpi-card ${cumplimiento>=100?'success':'danger'}"><div class="kpi-label">Cumplimiento Meta</div><div class="kpi-value">${cumplimiento.toFixed(1)}%</div></div>
             `;
-            const ctx1 = document.getElementById('chartEvolucion').getContext('2d');
-            if (window._chartEvolucion) window._chartEvolucion.destroy();
-            window._chartEvolucion = new Chart(ctx1, {
-                type: 'line',
-                data: { labels: MESES, datasets: [
-                    { label:'Neto HPS', data: datosMensuales.map(d=>d.hpsNeto||0), borderColor:'#1a3c5e' },
-                    { label:'Neto Import', data: datosMensuales.map(d=>d.impNeto||0), borderColor:'#e8873a' },
-                    { label:'Meta Mensual', data: Array(12).fill(META_MENSUAL), borderColor:'#c62828', borderDash:[5] }
-                ]},
-                options: { responsive:true }
-            });
-            const ctx2 = document.getElementById('chartAprobAnual').getContext('2d');
-            if (window._chartAprobAnual) window._chartAprobAnual.destroy();
-            window._chartAprobAnual = new Chart(ctx2, {
-                type: 'bar',
-                data: { labels: MESES, datasets: [{ data: datosMensuales.map(d=>d.totalTrans>0?d.aprobadas/d.totalTrans*100:0), backgroundColor:'#2e7d32' }] },
-                options: { responsive:true, plugins:{legend:{display:false}}, scales:{y:{max:100}} }
-            });
-            document.getElementById('tablaAnual').innerHTML = `<table><tr><th>Mes</th><th>Bruto HPS</th><th>Neto HPS</th><th>Bruto Import</th><th>Neto Import</th><th>Total Bruto</th><th>Total Neto</th></tr>
-            ${datosMensuales.map((d,i)=>`<tr><td>${MESES[i]}</td><td>$${d.hpsBruto.toLocaleString()}</td><td>$${d.hpsNeto.toLocaleString()}</td><td>$${d.impBruto.toLocaleString()}</td><td>$${d.impNeto.toLocaleString()}</td><td>$${((d.hpsBruto||0)+(d.impBruto||0)).toLocaleString()}</td><td>$${((d.hpsNeto||0)+(d.impNeto||0)).toLocaleString()}</td></tr>`).join('')}</table>`;
+            const ctx1 = document.getElementById('chartProdServAnual').getContext('2d');
+            if (window._chartProdServAnual) window._chartProdServAnual.destroy();
+            window._chartProdServAnual = new Chart(ctx1, { type: 'bar', data: { labels: ['Productos','Servicios'], datasets: [{ data: [cantProd, cantServ], backgroundColor: ['#1a3c5e','#e8873a'] }] }, options: { responsive: true, plugins: { legend: { display: false } } } });
+            const ctx2 = document.getElementById('chartHPSImportAnual').getContext('2d');
+            if (window._chartHPSImportAnual) window._chartHPSImportAnual.destroy();
+            window._chartHPSImportAnual = new Chart(ctx2, { type: 'doughnut', data: { labels: ['HPS','IMPORT'], datasets: [{ data: [cantHPS, cantIMP], backgroundColor: ['#2c5f8a','#f4a261'] }] }, options: { responsive: true } });
+            // Top clientes
+            const sorted = Object.entries(clientes).sort((a, b) => b[1] - a[1]).slice(0, 10);
+            let html = '<table><tr><th>Cliente</th><th>Total Bruto</th></tr>';
+            sorted.forEach(([c, v]) => html += `<tr><td>${c}</td><td>$${v.toLocaleString()}</td></tr>`);
+            html += '</table>';
+            document.getElementById('tablaClientes').innerHTML = html;
         }
 
         function renderizarDashboard() {
-            let acumNeto=0, acumHPS=0, acumIMP=0;
-            datosMensuales.forEach(d=>{ acumNeto+=(d.hpsNeto||0)+(d.impNeto||0); acumHPS+=d.hpsNeto||0; acumIMP+=d.impNeto||0; });
-            const cumplimiento = META_ANUAL>0?acumNeto/META_ANUAL*100:0;
+            let totalNeto = 0, aprobadas = 0, totalTrans = transacciones.length;
+            transacciones.forEach(t => { totalNeto += t.neto; if (t.estatus === 'APROBADO') aprobadas++; });
+            const cumplimiento = META_ANUAL > 0 ? (totalNeto / META_ANUAL * 100) : 0;
+            const tasaAprob = totalTrans > 0 ? (aprobadas / totalTrans * 100) : 0;
             document.getElementById('kpiDashboard').innerHTML = `
-                <div class="kpi-card"><div class="kpi-label">Total Neto</div><div class="kpi-value">$${acumNeto.toLocaleString()}</div></div>
-                <div class="kpi-card accent"><div class="kpi-label">HPS Neto</div><div class="kpi-value">$${acumHPS.toLocaleString()}</div></div>
-                <div class="kpi-card info"><div class="kpi-label">Import Neto</div><div class="kpi-value">$${acumIMP.toLocaleString()}</div></div>
+                <div class="kpi-card"><div class="kpi-label">Total Neto</div><div class="kpi-value">$${totalNeto.toLocaleString()}</div></div>
+                <div class="kpi-card info"><div class="kpi-label">Tasa Aprobación</div><div class="kpi-value">${tasaAprob.toFixed(1)}%</div></div>
                 <div class="kpi-card ${cumplimiento>=100?'success':'danger'}"><div class="kpi-label">Cumplimiento Meta</div><div class="kpi-value">${cumplimiento.toFixed(1)}%</div></div>
             `;
-            const ctx1 = document.getElementById('chartContribucion').getContext('2d');
-            if (window._chartContribucion) window._chartContribucion.destroy();
-            window._chartContribucion = new Chart(ctx1, {
-                type: 'pie', data: { labels:['HPS','Import'], datasets:[{ data:[acumHPS,acumIMP], backgroundColor:['#1a3c5e','#e8873a'] }] },
-            });
-            const ctx2 = document.getElementById('chartMeta').getContext('2d');
+            const ctx1 = document.getElementById('chartMeta').getContext('2d');
             if (window._chartMeta) window._chartMeta.destroy();
-            window._chartMeta = new Chart(ctx2, {
-                type: 'bar', data: { labels:['Real','Meta'], datasets:[{ data:[acumNeto, META_ANUAL], backgroundColor:['#2e7d32','#1565c0'] }] },
-                options: { responsive:true, plugins:{legend:{display:false}} }
-            });
+            window._chartMeta = new Chart(ctx1, { type: 'bar', data: { labels: ['Real','Meta'], datasets: [{ data: [totalNeto, META_ANUAL], backgroundColor: ['#2e7d32','#1565c0'] }] }, options: { responsive: true, plugins: { legend: { display: false } } } });
+            const ctx2 = document.getElementById('chartAprobAnual').getContext('2d');
+            if (window._chartAprobAnual) window._chartAprobAnual.destroy();
+            window._chartAprobAnual = new Chart(ctx2, { type: 'doughnut', data: { labels: ['Aprobadas','No Aprobadas'], datasets: [{ data: [aprobadas, totalTrans - aprobadas], backgroundColor: ['#2e7d32','#e0e0e0'] }] }, options: { responsive: true } });
         }
 
         window.iniciarSesion = function() {
             const u = document.getElementById('loginUsername').value.trim();
             const p = document.getElementById('loginPassword').value;
-            const err = document.getElementById('loginError');
-            err.textContent = '';
+            const err = document.getElementById('loginError'); err.textContent = '';
             const user = USUARIOS[u.toLowerCase()];
             if (!user || user.password !== p) { err.textContent = 'Credenciales incorrectas.'; return; }
             usuarioActual = user;
@@ -344,7 +407,7 @@
             document.getElementById('sidebar').style.display = 'flex';
             document.getElementById('mainContent').style.display = 'block';
             document.getElementById('loggedUserLabel').textContent = user.nombre;
-            initDatos();
+            inicializarDatos();
             setActiveView('monthly', 0);
         };
         window.cerrarSesion = function() {
