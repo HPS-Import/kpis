@@ -164,7 +164,7 @@
     </main>
 
     <script>
-        // ⚙️ CONFIGURACIÓN DE JSONBIN.IO
+        // ⚙️ CREDENCIALES JSONBIN
         const JSONBIN_API_KEY = '$2a$10$dwW0zsyd7QXo6I/EnsWJJeWbyQi8kF7Mi9PwH07gJj1CcODWLbqey';
         const JSONBIN_BIN_ID = '6a033b75250b1311c33c9cda';
 
@@ -176,21 +176,20 @@
         const META_MENSUAL = META_ANUAL / 12;
         let ingresos = [];
         let currentMonth = 0;
-        let estaSincronizado = false;
 
         async function cargarDatosRemotos() {
             try {
-                const resp = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+                // Añadimos un parámetro de ruptura de caché para obtener siempre la última versión
+                const resp = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest?ts=${Date.now()}`, {
                     headers: { 'X-Master-Key': JSONBIN_API_KEY }
                 });
                 if (!resp.ok) throw new Error('Error al cargar datos remotos');
                 const data = await resp.json();
                 ingresos = (data.record && data.record.data) ? data.record.data : [];
-                estaSincronizado = true;
                 actualizarIndicadorSync(true);
                 return true;
             } catch (error) {
-                console.warn('Usando datos locales de respaldo:', error.message);
+                console.warn('Cargando respaldo local:', error.message);
                 actualizarIndicadorSync(false);
                 return false;
             }
@@ -207,13 +206,12 @@
                     body: JSON.stringify({ data: ingresos })
                 });
                 if (!resp.ok) throw new Error('Error al guardar datos remotos');
-                estaSincronizado = true;
                 actualizarIndicadorSync(true);
                 return true;
             } catch (error) {
                 console.error('Error al guardar en la nube:', error.message);
                 actualizarIndicadorSync(false);
-                mostrarToast('⚠️ Cambios guardados solo localmente. Sin conexión al servidor.');
+                mostrarToast('⚠️ Sin conexión al servidor. Los cambios se guardarán localmente.');
                 return false;
             }
         }
@@ -228,7 +226,7 @@
 
         async function inicializarDatos() {
             const exito = await cargarDatosRemotos();
-            if (!exito || (Array.isArray(ingresos) && ingresos.length === 0)) {
+            if (!exito || !Array.isArray(ingresos) || ingresos.length === 0) {
                 precargarIngresos();
                 await guardarDatosRemotos();
             }
@@ -369,6 +367,7 @@
                 <div class="kpi-card"><div class="kpi-label">Ingresos IMPORT</div><div class="kpi-value">$${kpi.imp.toLocaleString()}</div></div>
                 <div class="kpi-card ${kpi.cumplimiento>=100?'success':'danger'}"><div class="kpi-label">Cumplimiento Meta</div><div class="kpi-value">${kpi.cumplimiento.toFixed(1)}%</div></div>
             `;
+
             const ctx1 = document.getElementById('chartHPSImport').getContext('2d');
             if (window._chartHPSImport) window._chartHPSImport.destroy();
             window._chartHPSImport = new Chart(ctx1, {
@@ -376,6 +375,7 @@
                 data: { labels: ['HPS','IMPORT','Sin clasificar'], datasets: [{ data: [kpi.hps, kpi.imp, kpi.sinClasif], backgroundColor: ['#1a3c5e','#e8873a','#cccccc'] }] },
                 options: { responsive: true }
             });
+
             const tx = filtrarPorMes(mes);
             const dias = {};
             tx.forEach(t => { const d = t.fecha.substring(8,10); dias[d] = (dias[d]||0) + t.monto; });
@@ -387,6 +387,7 @@
                 data: { labels: sortedDias.map(d=>`Día ${d[0]}`), datasets: [{ data: sortedDias.map(d=>d[1]), backgroundColor: '#2c5f8a' }] },
                 options: { responsive: true, plugins: { legend: { display: false } } }
             });
+
             let html = `<table><tr><th>Fecha</th><th>Cliente</th><th>Presupuesto</th><th>Línea</th><th>Producto/S</th><th>Monto</th>${esAdmin?'<th></th>':''}</tr>`;
             tx.forEach((t, i) => {
                 html += `<tr>
