@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Ingresos 2026 | DIVISIÓN ARBOLEDA HPS-IMPORT</title>
+    <title>Dashboard de Ingresos 2026 | Proyecciones y Servicios Arboleda, S.A.S.</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
     </script>
     <style>
@@ -74,26 +74,30 @@
         th, td { padding:10px 12px; text-align:right; border-bottom:1px solid var(--border); }
         th { background:#f7f8fa; font-weight:700; color:var(--primary); font-size:0.7rem; }
         td:first-child, th:first-child { text-align:left; font-weight:600; }
+        .toast { position:fixed; bottom:28px; right:28px; background:var(--success); color:#fff; padding:12px 22px; border-radius:25px; font-weight:600; font-size:0.85rem; box-shadow:0 4px 12px rgba(0,0,0,0.2); z-index:999; animation:slideUp 0.35s ease; }
+        @keyframes slideUp { from { transform:translateY(60px); opacity:0; } to { transform:translateY(0); opacity:1; } }
         @media print { .sidebar, .btn, .toast, .no-print { display:none!important; } .main { margin-left:0!important; padding:10px!important; } }
+        .sync-indicator { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; }
+        .sync-ok { background:#2e7d32; }
+        .sync-pending { background:#f9a825; animation:pulse 1s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
     </style>
 </head>
 <body>
     <div class="login-overlay" id="loginOverlay">
         <div class="login-card">
-            <h2>DIVISIÓN ARBOLEDA HPS-IMPORT</h2>
+            <h2>PROYECCIONES Y SERVICIOS ARBOLEDA, S.A.S.</h2>
             <div class="subtitle">Dashboard de Ingresos 2026</div>
             <input type="text" id="loginUsername" placeholder="Usuario" autocomplete="off">
             <input type="password" id="loginPassword" placeholder="Contraseña">
             <button class="btn-login" onclick="iniciarSesion()">Ingresar</button>
             <div class="error-msg" id="loginError"></div>
-            <div class="hint" style="font-size:0.7rem;opacity:0.8;margin-top:10px;">ACCESO INVITADO | Usuario: invitado / Pass: invitado</div>
+            <div class="hint" style="font-size:0.7rem;opacity:0.8;margin-top:10px;">admin / admin123 | gerente / gerente123 | invitado / invitado</div>
         </div>
     </div>
 
     <aside class="sidebar no-print" id="sidebar" style="display:none;">
-        <div class="sidebar-header"><h2>DIVISIÓN ARBOLEDA
-<br>HPS-IMPORT</h2></div>
-        <div class="subtitle">Dashboard de Ingresos 2026<br></div>
+        <div class="sidebar-header"><h2>PROYECCIONES Y SERVICIOS<br>ARBOLEDA, S.A.S.</h2></div>
         <nav class="sidebar-nav">
             <div class="nav-section">Mensual</div>
             <button data-view="monthly" data-month="0">Enero</button>
@@ -112,7 +116,10 @@
             <button data-view="annual">Total Anual</button>
             <button data-view="dashboard">Dashboard KPIs</button>
         </nav>
-        <div class="sidebar-footer"><span id="loggedUserLabel"></span><button class="btn-logout" onclick="cerrarSesion()">Salir</button></div>
+        <div class="sidebar-footer">
+            <span id="loggedUserLabel"></span>
+            <span style="display:flex;align-items:center;gap:4px;"><span class="sync-indicator sync-ok" id="syncDot"></span><button class="btn-logout" onclick="cerrarSesion()">Salir</button></span>
+        </div>
     </aside>
 
     <main class="main" id="mainContent" style="display:none;">
@@ -157,21 +164,76 @@
     </main>
 
     <script>
+        // ⚙️ CONFIGURACIÓN DE JSONBIN.IO
+        const JSONBIN_API_KEY = '$2a$10$dwW0zsyd7QXo6I/EnsWJJeWbyQi8kF7Mi9PwH07gJj1CcODWLbqey';
+        const JSONBIN_BIN_ID = '6a033b75250b1311c33c9cda';
+
         window.imprimirVista = function() { window.print(); };
         const USUARIOS = { 'admin': { password: 'admin123', rol: 'admin', nombre: 'Administrador' }, 'gerente': { password: 'gerente123', rol: 'admin', nombre: 'Gerente' }, 'invitado': { password: 'invitado', rol: 'invitado', nombre: 'Invitado' } };
         let usuarioActual = null;
         const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
         const META_ANUAL = 1250000;
         const META_MENSUAL = META_ANUAL / 12;
-        const STORAGE_KEY_ING = 'ingresos_2026_data';
         let ingresos = [];
         let currentMonth = 0;
+        let estaSincronizado = false;
 
-        function inicializarDatos() {
-            const saved = localStorage.getItem(STORAGE_KEY_ING);
-            if (saved) { ingresos = JSON.parse(saved); }
-            else { precargarIngresos(); }
+        async function cargarDatosRemotos() {
+            try {
+                const resp = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+                    headers: { 'X-Master-Key': JSONBIN_API_KEY }
+                });
+                if (!resp.ok) throw new Error('Error al cargar datos remotos');
+                const data = await resp.json();
+                ingresos = (data.record && data.record.data) ? data.record.data : [];
+                estaSincronizado = true;
+                actualizarIndicadorSync(true);
+                return true;
+            } catch (error) {
+                console.warn('Usando datos locales de respaldo:', error.message);
+                actualizarIndicadorSync(false);
+                return false;
+            }
         }
+
+        async function guardarDatosRemotos() {
+            try {
+                const resp = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': JSONBIN_API_KEY
+                    },
+                    body: JSON.stringify({ data: ingresos })
+                });
+                if (!resp.ok) throw new Error('Error al guardar datos remotos');
+                estaSincronizado = true;
+                actualizarIndicadorSync(true);
+                return true;
+            } catch (error) {
+                console.error('Error al guardar en la nube:', error.message);
+                actualizarIndicadorSync(false);
+                mostrarToast('⚠️ Cambios guardados solo localmente. Sin conexión al servidor.');
+                return false;
+            }
+        }
+
+        function actualizarIndicadorSync(ok) {
+            const dot = document.getElementById('syncDot');
+            if (dot) {
+                dot.className = 'sync-indicator ' + (ok ? 'sync-ok' : 'sync-pending');
+                dot.title = ok ? 'Datos sincronizados' : 'Sin conexión - cambios locales';
+            }
+        }
+
+        async function inicializarDatos() {
+            const exito = await cargarDatosRemotos();
+            if (!exito || (Array.isArray(ingresos) && ingresos.length === 0)) {
+                precargarIngresos();
+                await guardarDatosRemotos();
+            }
+        }
+
         function precargarIngresos() {
             ingresos = [
                 // ENERO
@@ -258,9 +320,7 @@
                 { fecha: '2026-05-08', mes: 4, cliente: 'BLUE DOWNTOWN HOTEL PC SRL', presupuesto: '23006651', linea: '', producto: '', monto: 14547.00 },
                 { fecha: '2026-05-09', mes: 4, cliente: 'DKLIC PLUS INVESTMENT SRL', presupuesto: '23006677', linea: '', producto: '', monto: 24.30 }
             ];
-            guardarIngresos();
         }
-        function guardarIngresos() { localStorage.setItem(STORAGE_KEY_ING, JSON.stringify(ingresos)); }
 
         function filtrarPorMes(mes) { return ingresos.filter(t => t.mes === mes); }
         function calcularKPIsMes(mes) {
@@ -316,7 +376,6 @@
                 data: { labels: ['HPS','IMPORT','Sin clasificar'], datasets: [{ data: [kpi.hps, kpi.imp, kpi.sinClasif], backgroundColor: ['#1a3c5e','#e8873a','#cccccc'] }] },
                 options: { responsive: true }
             });
-            // Gráfico diario
             const tx = filtrarPorMes(mes);
             const dias = {};
             tx.forEach(t => { const d = t.fecha.substring(8,10); dias[d] = (dias[d]||0) + t.monto; });
@@ -328,7 +387,6 @@
                 data: { labels: sortedDias.map(d=>`Día ${d[0]}`), datasets: [{ data: sortedDias.map(d=>d[1]), backgroundColor: '#2c5f8a' }] },
                 options: { responsive: true, plugins: { legend: { display: false } } }
             });
-            // Tabla
             let html = `<table><tr><th>Fecha</th><th>Cliente</th><th>Presupuesto</th><th>Línea</th><th>Producto/S</th><th>Monto</th>${esAdmin?'<th></th>':''}</tr>`;
             tx.forEach((t, i) => {
                 html += `<tr>
@@ -340,13 +398,14 @@
             document.getElementById('tablaIngresos').innerHTML = html;
         }
 
-        window.eliminarIngreso = function(index) {
+        window.eliminarIngreso = async function(index) {
             if (!usuarioActual || usuarioActual.rol !== 'admin') return;
             ingresos.splice(index, 1);
-            guardarIngresos();
+            await guardarDatosRemotos();
             renderizarMes(currentMonth);
+            mostrarToast('🗑️ Ingreso eliminado');
         };
-        window.guardarIngreso = function() {
+        window.guardarIngreso = async function() {
             if (!usuarioActual || usuarioActual.rol !== 'admin') return;
             const fecha = document.getElementById('ingFecha').value;
             const mes = new Date(fecha + 'T00:00:00').getMonth();
@@ -358,9 +417,10 @@
                 monto: parseFloat(document.getElementById('ingMonto').value) || 0
             };
             ingresos.push(nuevo);
-            guardarIngresos();
+            await guardarDatosRemotos();
             renderizarMes(currentMonth);
             limpiarFormIngreso();
+            mostrarToast('✅ Ingreso guardado correctamente');
         };
         window.limpiarFormIngreso = function() {
             document.getElementById('ingFecha').value = ''; document.getElementById('ingCliente').value = '';
@@ -402,7 +462,6 @@
                 data: { labels: MESES, datasets: [{ label: 'HPS', data: hpsPorMes, backgroundColor: '#1a3c5e' }, { label: 'IMPORT', data: impPorMes, backgroundColor: '#e8873a' }] },
                 options: { responsive: true, scales: { x: { stacked: true }, y: { stacked: true } } }
             });
-            // Top clientes
             const sorted = Object.entries(clientes).sort((a,b)=>b[1]-a[1]).slice(0,15);
             let html = '<table><tr><th>Cliente</th><th>Total Ingresos</th></tr>';
             sorted.forEach(([c,v]) => html += `<tr><td>${c}</td><td>$${v.toLocaleString()}</td></tr>`);
@@ -436,7 +495,17 @@
             window._chartDistribucion = new Chart(ctx2, { type: 'pie', data: { labels: ['HPS','IMPORT','Sin clasificar'], datasets: [{ data: [totalHPS, totalIMP, total-totalHPS-totalIMP], backgroundColor: ['#1a3c5e','#e8873a','#cccccc'] }] }, options: { responsive: true } });
         }
 
-        window.iniciarSesion = function() {
+        function mostrarToast(msg) {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+            const t = document.createElement('div');
+            t.className = 'toast';
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 2500);
+        }
+
+        window.iniciarSesion = async function() {
             const u = document.getElementById('loginUsername').value.trim();
             const p = document.getElementById('loginPassword').value;
             const err = document.getElementById('loginError'); err.textContent = '';
@@ -447,7 +516,7 @@
             document.getElementById('sidebar').style.display = 'flex';
             document.getElementById('mainContent').style.display = 'block';
             document.getElementById('loggedUserLabel').textContent = user.nombre;
-            inicializarDatos();
+            await inicializarDatos();
             setActiveView('monthly', 0);
         };
         window.cerrarSesion = function() {
