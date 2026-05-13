@@ -86,7 +86,7 @@
 <body>
     <div class="login-overlay" id="loginOverlay">
         <div class="login-card">
-            <h2> ARBOLEDA, S.A.S.</h2>
+            <h2>PROYECCIONES Y SERVICIOS ARBOLEDA, S.A.S.</h2>
             <div class="subtitle">Dashboard de Ingresos 2026</div>
             <input type="text" id="loginUsername" placeholder="Usuario" autocomplete="off">
             <input type="password" id="loginPassword" placeholder="Contraseña">
@@ -164,7 +164,7 @@
     </main>
 
     <script>
-        // ⚙️ CONFIGURACIÓN DE JSONBIN.IO (USA ESTA API KEY)
+        // ⚙️ CONFIGURACIÓN DE JSONBIN.IO
         const JSONBIN_API_KEY = '$2a$10$b9o.f47WPvbdYcpPTAYaheNddQDe3H6iaPlcnAfffDDkBBm6x3VHS';
         const JSONBIN_BIN_ID = '6a033b75250b1311c33c9cda';
 
@@ -176,7 +176,7 @@
         const META_MENSUAL = META_ANUAL / 12;
         let ingresos = [];
         let currentMonth = 0;
-        let nextId = 1; // Contador para IDs únicos
+        let nextId = Date.now();
 
         async function cargarDatosRemotos() {
             try {
@@ -186,10 +186,11 @@
                 if (!resp.ok) throw new Error('Error al cargar datos remotos');
                 const data = await resp.json();
                 ingresos = (data.record && data.record.data) ? data.record.data : [];
-                // Actualizar nextId basado en el mayor ID existente
+                // Asignar ID único a cualquier registro que no lo tenga
+                ingresos.forEach(t => { if (!t.id) t.id = nextId++; });
                 if (ingresos.length > 0) {
                     const maxId = Math.max(...ingresos.map(t => t.id || 0));
-                    nextId = maxId + 1;
+                    if (maxId >= nextId) nextId = maxId + 1;
                 }
                 actualizarIndicadorSync(true);
                 return true;
@@ -204,10 +205,7 @@
             try {
                 const resp = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Master-Key': JSONBIN_API_KEY
-                    },
+                    headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY },
                     body: JSON.stringify({ data: ingresos })
                 });
                 if (!resp.ok) throw new Error('Error al guardar datos remotos');
@@ -239,6 +237,7 @@
 
         function precargarIngresos() {
             ingresos = [
+                // ENERO
                 { id: nextId++, fecha: '2026-01-03', mes: 0, cliente: 'CILCAMA- HOTEL CASA MARINA REEF', presupuesto: '23005826', linea: 'HPS', producto: 'TARJETAS RFID', monto: 959.34 },
                 { id: nextId++, fecha: '2026-01-06', mes: 0, cliente: 'MODUS VIVENDIS - HOTEL EL BARCO', presupuesto: '23006048', linea: 'HPS', producto: 'TARJETAS RFID', monto: 793.90 },
                 { id: nextId++, fecha: '2026-01-06', mes: 0, cliente: 'CONST. JOHANN REYES MARMOLEJOS', presupuesto: '23005947', linea: 'IMPORT', producto: 'PUERTA RF MESKER', monto: 1562.50 },
@@ -331,11 +330,7 @@
             const hps = tx.filter(t => t.linea === 'HPS').reduce((s, t) => s + t.monto, 0);
             const imp = tx.filter(t => t.linea === 'IMPORT').reduce((s, t) => s + t.monto, 0);
             const sinClasif = tx.filter(t => !t.linea || t.linea === '').reduce((s, t) => s + t.monto, 0);
-            return {
-                total, hps, imp, sinClasif,
-                cantTotal: tx.length,
-                cumplimiento: META_MENSUAL > 0 ? (total / META_MENSUAL * 100) : 0
-            };
+            return { total, hps, imp, sinClasif, cantTotal: tx.length, cumplimiento: META_MENSUAL > 0 ? (total / META_MENSUAL * 100) : 0 };
         }
 
         let currentView = 'monthly';
@@ -371,27 +366,16 @@
                 <div class="kpi-card"><div class="kpi-label">Ingresos IMPORT</div><div class="kpi-value">$${kpi.imp.toLocaleString()}</div></div>
                 <div class="kpi-card ${kpi.cumplimiento>=100?'success':'danger'}"><div class="kpi-label">Cumplimiento Meta</div><div class="kpi-value">${kpi.cumplimiento.toFixed(1)}%</div></div>
             `;
-
             const ctx1 = document.getElementById('chartHPSImport').getContext('2d');
             if (window._chartHPSImport) window._chartHPSImport.destroy();
-            window._chartHPSImport = new Chart(ctx1, {
-                type: 'doughnut',
-                data: { labels: ['HPS','IMPORT','Sin clasificar'], datasets: [{ data: [kpi.hps, kpi.imp, kpi.sinClasif], backgroundColor: ['#1a3c5e','#e8873a','#cccccc'] }] },
-                options: { responsive: true }
-            });
-
+            window._chartHPSImport = new Chart(ctx1, { type: 'doughnut', data: { labels: ['HPS','IMPORT','Sin clasificar'], datasets: [{ data: [kpi.hps, kpi.imp, kpi.sinClasif], backgroundColor: ['#1a3c5e','#e8873a','#cccccc'] }] }, options: { responsive: true } });
             const tx = filtrarPorMes(mes);
             const dias = {};
             tx.forEach(t => { const d = t.fecha.substring(8,10); dias[d] = (dias[d]||0) + t.monto; });
             const sortedDias = Object.entries(dias).sort((a,b)=>parseInt(a[0])-parseInt(b[0]));
             const ctx2 = document.getElementById('chartDiario').getContext('2d');
             if (window._chartDiario) window._chartDiario.destroy();
-            window._chartDiario = new Chart(ctx2, {
-                type: 'bar',
-                data: { labels: sortedDias.map(d=>`Día ${d[0]}`), datasets: [{ data: sortedDias.map(d=>d[1]), backgroundColor: '#2c5f8a' }] },
-                options: { responsive: true, plugins: { legend: { display: false } } }
-            });
-
+            window._chartDiario = new Chart(ctx2, { type: 'bar', data: { labels: sortedDias.map(d=>`Día ${d[0]}`), datasets: [{ data: sortedDias.map(d=>d[1]), backgroundColor: '#2c5f8a' }] }, options: { responsive: true, plugins: { legend: { display: false } } } });
             let html = `<table><tr><th>Fecha</th><th>Cliente</th><th>Presupuesto</th><th>Línea</th><th>Producto/S</th><th>Monto</th>${esAdmin?'<th></th>':''}</tr>`;
             tx.forEach(t => {
                 html += `<tr>
@@ -405,36 +389,28 @@
 
         window.eliminarIngreso = async function(id) {
             if (!usuarioActual || usuarioActual.rol !== 'admin') return;
-            const index = ingresos.findIndex(t => t.id === id);
-            if (index === -1) return;
+            const idNum = Number(id);
+            const index = ingresos.findIndex(t => t.id === idNum);
+            if (index === -1) { mostrarToast('❌ No se pudo eliminar: ID no encontrado.'); return; }
             ingresos.splice(index, 1);
-            await guardarDatosRemotos();
+            const guardado = await guardarDatosRemotos();
+            if (!guardado) { mostrarToast('❌ No se pudo eliminar en el servidor. Reintente.'); return; }
             renderizarMes(currentMonth);
             mostrarToast('🗑️ Ingreso eliminado');
         };
+
         window.guardarIngreso = async function() {
             if (!usuarioActual || usuarioActual.rol !== 'admin') return;
             const fecha = document.getElementById('ingFecha').value;
             const mes = new Date(fecha + 'T00:00:00').getMonth();
-            const nuevo = {
-                id: nextId++,
-                fecha, mes, cliente: document.getElementById('ingCliente').value,
-                presupuesto: document.getElementById('ingPresupuesto').value,
-                linea: document.getElementById('ingLinea').value,
-                producto: document.getElementById('ingProducto').value,
-                monto: parseFloat(document.getElementById('ingMonto').value) || 0
-            };
+            const nuevo = { id: nextId++, fecha, mes, cliente: document.getElementById('ingCliente').value, presupuesto: document.getElementById('ingPresupuesto').value, linea: document.getElementById('ingLinea').value, producto: document.getElementById('ingProducto').value, monto: parseFloat(document.getElementById('ingMonto').value) || 0 };
             ingresos.push(nuevo);
             await guardarDatosRemotos();
             renderizarMes(currentMonth);
             limpiarFormIngreso();
             mostrarToast('✅ Ingreso guardado correctamente');
         };
-        window.limpiarFormIngreso = function() {
-            document.getElementById('ingFecha').value = ''; document.getElementById('ingCliente').value = '';
-            document.getElementById('ingPresupuesto').value = ''; document.getElementById('ingProducto').value = '';
-            document.getElementById('ingMonto').value = '';
-        };
+        window.limpiarFormIngreso = function() { document.getElementById('ingFecha').value = ''; document.getElementById('ingCliente').value = ''; document.getElementById('ingPresupuesto').value = ''; document.getElementById('ingProducto').value = ''; document.getElementById('ingMonto').value = ''; };
 
         function renderizarAnual() {
             let total = 0, totalHPS = 0, totalIMP = 0;
@@ -443,8 +419,7 @@
             const hpsPorMes = Array(12).fill(0);
             const impPorMes = Array(12).fill(0);
             ingresos.forEach(t => {
-                total += t.monto;
-                porMes[t.mes] += t.monto;
+                total += t.monto; porMes[t.mes] += t.monto;
                 if (t.linea === 'HPS') { totalHPS += t.monto; hpsPorMes[t.mes] += t.monto; }
                 else if (t.linea === 'IMPORT') { totalIMP += t.monto; impPorMes[t.mes] += t.monto; }
                 clientes[t.cliente] = (clientes[t.cliente] || 0) + t.monto;
@@ -458,18 +433,10 @@
             `;
             const ctx1 = document.getElementById('chartEvolucion').getContext('2d');
             if (window._chartEvolucion) window._chartEvolucion.destroy();
-            window._chartEvolucion = new Chart(ctx1, {
-                type: 'line',
-                data: { labels: MESES, datasets: [{ label: 'Ingresos', data: porMes, borderColor: '#1a3c5e', fill: false }, { label: 'Meta Mensual', data: Array(12).fill(META_MENSUAL), borderColor: '#c62828', borderDash: [5], fill: false }] },
-                options: { responsive: true }
-            });
+            window._chartEvolucion = new Chart(ctx1, { type: 'line', data: { labels: MESES, datasets: [{ label: 'Ingresos', data: porMes, borderColor: '#1a3c5e', fill: false }, { label: 'Meta Mensual', data: Array(12).fill(META_MENSUAL), borderColor: '#c62828', borderDash: [5], fill: false }] }, options: { responsive: true } });
             const ctx2 = document.getElementById('chartHPSImportMensual').getContext('2d');
             if (window._chartHPSImportMensual) window._chartHPSImportMensual.destroy();
-            window._chartHPSImportMensual = new Chart(ctx2, {
-                type: 'bar',
-                data: { labels: MESES, datasets: [{ label: 'HPS', data: hpsPorMes, backgroundColor: '#1a3c5e' }, { label: 'IMPORT', data: impPorMes, backgroundColor: '#e8873a' }] },
-                options: { responsive: true, scales: { x: { stacked: true }, y: { stacked: true } } }
-            });
+            window._chartHPSImportMensual = new Chart(ctx2, { type: 'bar', data: { labels: MESES, datasets: [{ label: 'HPS', data: hpsPorMes, backgroundColor: '#1a3c5e' }, { label: 'IMPORT', data: impPorMes, backgroundColor: '#e8873a' }] }, options: { responsive: true, scales: { x: { stacked: true }, y: { stacked: true } } } });
             const sorted = Object.entries(clientes).sort((a,b)=>b[1]-a[1]).slice(0,15);
             let html = '<table><tr><th>Cliente</th><th>Total Ingresos</th></tr>';
             sorted.forEach(([c,v]) => html += `<tr><td>${c}</td><td>$${v.toLocaleString()}</td></tr>`);
@@ -479,11 +446,7 @@
 
         function renderizarDashboard() {
             let total = 0, totalHPS = 0, totalIMP = 0;
-            ingresos.forEach(t => {
-                total += t.monto;
-                if (t.linea === 'HPS') totalHPS += t.monto;
-                else if (t.linea === 'IMPORT') totalIMP += t.monto;
-            });
+            ingresos.forEach(t => { total += t.monto; if (t.linea === 'HPS') totalHPS += t.monto; else if (t.linea === 'IMPORT') totalIMP += t.monto; });
             const cumplimiento = META_ANUAL > 0 ? (total / META_ANUAL * 100) : 0;
             const mejorMes = Array(12).fill(0).map((_,i) => filtrarPorMes(i).reduce((s,t)=>s+t.monto,0));
             const mejor = Math.max(...mejorMes);
@@ -503,22 +466,14 @@
             window._chartDistribucion = new Chart(ctx2, { type: 'pie', data: { labels: ['HPS','IMPORT','Sin clasificar'], datasets: [{ data: [totalHPS, totalIMP, total-totalHPS-totalIMP], backgroundColor: ['#1a3c5e','#e8873a','#cccccc'] }] }, options: { responsive: true } });
         }
 
-        function mostrarToast(msg) {
-            const existing = document.querySelector('.toast');
-            if (existing) existing.remove();
-            const t = document.createElement('div');
-            t.className = 'toast';
-            t.textContent = msg;
-            document.body.appendChild(t);
-            setTimeout(() => t.remove(), 2500);
-        }
+        function mostrarToast(msg) { const e = document.querySelector('.toast'); if (e) e.remove(); const t = document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2500); }
 
         window.iniciarSesion = async function() {
             const u = document.getElementById('loginUsername').value.trim();
             const p = document.getElementById('loginPassword').value;
-            const err = document.getElementById('loginError'); err.textContent = '';
+            document.getElementById('loginError').textContent = '';
             const user = USUARIOS[u.toLowerCase()];
-            if (!user || user.password !== p) { err.textContent = 'Credenciales incorrectas.'; return; }
+            if (!user || user.password !== p) { document.getElementById('loginError').textContent = 'Credenciales incorrectas.'; return; }
             usuarioActual = user;
             document.getElementById('loginOverlay').style.display = 'none';
             document.getElementById('sidebar').style.display = 'flex';
@@ -527,19 +482,8 @@
             await inicializarDatos();
             setActiveView('monthly', 0);
         };
-        window.cerrarSesion = function() {
-            usuarioActual = null;
-            document.getElementById('loginOverlay').style.display = 'flex';
-            document.getElementById('sidebar').style.display = 'none';
-            document.getElementById('mainContent').style.display = 'none';
-        };
-        document.querySelectorAll('.sidebar-nav button[data-view]').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const view = this.dataset.view;
-                const month = this.dataset.month !== undefined ? parseInt(this.dataset.month) : null;
-                setActiveView(view, month);
-            });
-        });
+        window.cerrarSesion = function() { usuarioActual = null; document.getElementById('loginOverlay').style.display = 'flex'; document.getElementById('sidebar').style.display = 'none'; document.getElementById('mainContent').style.display = 'none'; };
+        document.querySelectorAll('.sidebar-nav button[data-view]').forEach(btn => { btn.addEventListener('click', function() { const view = this.dataset.view; const month = this.dataset.month !== undefined ? parseInt(this.dataset.month) : null; setActiveView(view, month); }); });
     </script>
 </body>
 </html>
