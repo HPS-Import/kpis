@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Rentabilidad | DIVISIÓN ARBOLEDA HPS-IMPORT</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
-    </script>
+    <title>Dashboard Integral | DIVISIÓN ARBOLEDA HPS-IMPORT</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;600&display=swap');
         :root {
             --bg: #f0f2f5;
             --surface: #ffffff;
@@ -18,651 +18,183 @@
             --danger: #c62828;
             --warning: #f9a825;
             --info: #1565c0;
+            --cash: #00897b;
+            --dso: #6a1b9a;
             --text: #1a1a1a;
             --text-secondary: #5a5a5a;
             --border: #dde1e6;
-            --shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.10);
+            --shadow: 0 2px 8px rgba(0,0,0,0.06);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.10);
             --radius: 12px;
             --radius-sm: 8px;
             --transition: 0.2s ease;
-            --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            --font: 'DM Sans', system-ui, sans-serif;
+            --mono: 'JetBrains Mono', monospace;
             --sidebar-w: 260px;
         }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:var(--font); background:var(--bg); color:var(--text); display:flex; min-height:100vh; }
+        .login-overlay { position:fixed; inset:0; background:linear-gradient(135deg,#1a3c5e,#2c5f8a 50%,#00897b); display:flex; align-items:center; justify-content:center; z-index:9999; }
+        .login-card { background:var(--surface); border-radius:var(--radius); padding:40px 32px; box-shadow:var(--shadow-lg); width:380px; max-width:92%; text-align:center; }
+        .login-card h2 { font-size:1.3rem; color:var(--primary); margin-bottom:4px; letter-spacing:0.3px; }
+        .login-card .subtitle { font-size:0.78rem; color:var(--text-secondary); margin-bottom:24px; }
+        .login-card input { width:100%; padding:12px 14px; margin-bottom:12px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:0.9rem; font-family:var(--font); background:#fafbfc; transition:border var(--transition); }
+        .login-card input:focus { outline:none; border-color:var(--primary-light); box-shadow:0 0 0 3px rgba(44,95,138,0.1); }
+        .login-card .btn-login { width:100%; padding:12px; border:none; border-radius:25px; font-weight:600; font-size:0.9rem; cursor:pointer; background:var(--primary); color:#fff; transition:background var(--transition); margin-top:8px; font-family:var(--font); }
+        .login-card .btn-login:hover { background:var(--primary-light); }
+        .login-card .error-msg { color:var(--danger); font-size:0.8rem; margin-top:8px; min-height:20px; }
+        .login-card .hint { font-size:0.7rem; color:var(--text-secondary); margin-top:16px; opacity:0.8; }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: var(--font);
-            background: var(--bg);
-            color: var(--text);
-            display: flex;
-            min-height: 100vh;
-        }
+        .sidebar { width:var(--sidebar-w); background:var(--primary); color:#fff; display:flex; flex-direction:column; position:fixed; inset:0 auto 0 0; z-index:100; box-shadow:4px 0 20px rgba(0,0,0,0.15); overflow-y:auto; }
+        .sidebar-header { padding:22px 20px 14px; border-bottom:1px solid rgba(255,255,255,0.15); }
+        .sidebar-header h2 { font-size:0.95rem; font-weight:700; letter-spacing:0.5px; line-height:1.3; opacity:0.95; }
+        .sidebar-header .subtitle { font-size:0.68rem; opacity:0.65; margin-top:2px; }
+        .sidebar-nav { flex:1; padding:8px 0; }
+        .sidebar-nav .nav-section { padding:10px 20px 4px; font-size:0.65rem; text-transform:uppercase; letter-spacing:1.2px; opacity:0.45; font-weight:700; }
+        .sidebar-nav button { display:block; width:100%; text-align:left; background:none; border:none; color:rgba(255,255,255,0.75); padding:10px 20px; cursor:pointer; font-size:0.84rem; transition:all var(--transition); font-family:var(--font); border-left:3px solid transparent; }
+        .sidebar-nav button:hover { background:rgba(255,255,255,0.06); color:#fff; }
+        .sidebar-nav button.active { background:rgba(255,255,255,0.12); color:#fff; border-left-color:var(--accent); font-weight:600; }
+        .sidebar-footer { padding:14px 20px; border-top:1px solid rgba(255,255,255,0.15); font-size:0.7rem; opacity:0.5; display:flex; justify-content:space-between; align-items:center; }
+        .btn-logout { background:none; border:1px solid rgba(255,255,255,0.3); color:#fff; padding:4px 10px; border-radius:12px; cursor:pointer; font-size:0.65rem; font-family:var(--font); transition:all var(--transition); }
+        .btn-logout:hover { background:rgba(255,255,255,0.15); }
 
-        /* LOGIN SCREEN */
-        .login-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #1a3c5e 0%, #2c5f8a 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-        }
-        .login-card {
-            background: var(--surface);
-            border-radius: var(--radius);
-            padding: 40px 32px;
-            box-shadow: var(--shadow-lg);
-            width: 360px;
-            max-width: 90%;
-            text-align: center;
-        }
-        .login-card h2 {
-            font-size: 1.4rem;
-            color: var(--primary);
-            margin-bottom: 6px;
-            letter-spacing: 0.2px;
-        }
-        .login-card .subtitle {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            margin-bottom: 24px;
-        }
-        .login-card input {
-            width: 100%;
-            padding: 12px 14px;
-            margin-bottom: 12px;
-            border: 1.5px solid var(--border);
-            border-radius: var(--radius-sm);
-            font-size: 0.9rem;
-            font-family: var(--font);
-            background: #fafbfc;
-            transition: border var(--transition);
-        }
-        .login-card input:focus {
-            outline: none;
-            border-color: var(--primary-light);
-            box-shadow: 0 0 0 3px rgba(44, 95, 138, 0.1);
-        }
-        .login-card .btn-login {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 25px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            cursor: pointer;
-            background: var(--primary);
-            color: #fff;
-            letter-spacing: 0.3px;
-            transition: background var(--transition);
-            margin-top: 8px;
-        }
-        .login-card .btn-login:hover {
-            background: var(--primary-light);
-        }
-        .login-card .error-msg {
-            color: var(--danger);
-            font-size: 0.8rem;
-            margin-top: 8px;
-            min-height: 20px;
-        }
-        .login-card .hint {
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-            margin-top: 16px;
-            opacity: 0.8;
-        }
+        .main { margin-left:var(--sidebar-w); flex:1; padding:24px 28px; max-width:1500px; }
+        .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px; }
+        .topbar h1 { font-size:1.4rem; font-weight:700; color:var(--primary); letter-spacing:-0.3px; }
+        .topbar .badge { padding:5px 12px; border-radius:20px; font-size:0.74rem; font-weight:600; letter-spacing:0.2px; color:#fff; }
+        .badge-primary { background:var(--accent); }
+        .badge-cash { background:var(--cash); }
+        .badge-dso { background:var(--dso); }
+        .badge-danger { background:var(--danger); }
+        .view-panel { display:none; }
+        .view-panel.active { display:block; }
 
-        /* SIDEBAR */
-        .sidebar {
-            width: var(--sidebar-w);
-            background: var(--primary);
-            color: #fff;
-            display: flex;
-            flex-direction: column;
-            position: fixed;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            z-index: 100;
-            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
-            transition: transform var(--transition);
-        }
-        .sidebar-header {
-            padding: 24px 20px 16px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-        }
-        .sidebar-header h2 {
-            font-size: 1rem;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            line-height: 1.3;
-            opacity: 0.95;
-        }
-        .sidebar-header .subtitle {
-            font-size: 0.7rem;
-            opacity: 0.65;
-            margin-top: 2px;
-            letter-spacing: 0.3px;
-        }
-        .sidebar-nav {
-            flex: 1;
-            overflow-y: auto;
-            padding: 12px 0;
-        }
-        .sidebar-nav .nav-section {
-            padding: 8px 20px 4px;
-            font-size: 0.68rem;
-            text-transform: uppercase;
-            letter-spacing: 1.2px;
-            opacity: 0.5;
-            font-weight: 600;
-        }
-        .sidebar-nav button {
-            display: block;
-            width: 100%;
-            text-align: left;
-            background: none;
-            border: none;
-            color: rgba(255, 255, 255, 0.8);
-            padding: 11px 20px;
-            cursor: pointer;
-            font-size: 0.88rem;
-            border-radius: 0;
-            transition: all var(--transition);
-            font-family: var(--font);
-            border-left: 3px solid transparent;
-        }
-        .sidebar-nav button:hover {
-            background: rgba(255, 255, 255, 0.06);
-            color: #fff;
-        }
-        .sidebar-nav button.active {
-            background: rgba(255, 255, 255, 0.12);
-            color: #fff;
-            border-left-color: var(--accent);
-            font-weight: 600;
-        }
-        .sidebar-footer {
-            padding: 16px 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.15);
-            font-size: 0.7rem;
-            opacity: 0.5;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .btn-logout {
-            background: none;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: #fff;
-            padding: 4px 10px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 0.65rem;
-            font-family: var(--font);
-            transition: all var(--transition);
-        }
-        .btn-logout:hover {
-            background: rgba(255, 255, 255, 0.15);
-        }
+        .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:14px; margin-bottom:20px; }
+        .kpi-card { background:var(--surface); border-radius:var(--radius); padding:18px 20px; box-shadow:var(--shadow); border:1px solid var(--border); transition:box-shadow var(--transition); }
+        .kpi-card:hover { box-shadow:var(--shadow-lg); }
+        .kpi-card .kpi-label { font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:5px; font-weight:600; }
+        .kpi-card .kpi-value { font-size:1.65rem; font-weight:700; color:var(--primary); letter-spacing:-0.5px; font-family:var(--mono); }
+        .kpi-card .kpi-sub { font-size:0.76rem; color:var(--text-secondary); margin-top:2px; }
+        .kpi-card.accent .kpi-value { color:var(--accent); }
+        .kpi-card.success .kpi-value { color:var(--success); }
+        .kpi-card.danger .kpi-value { color:var(--danger); }
+        .kpi-card.info .kpi-value { color:var(--info); }
+        .kpi-card.cash .kpi-value { color:var(--cash); }
+        .kpi-card.dso .kpi-value { color:var(--dso); }
 
-        /* MAIN */
-        .main {
-            margin-left: var(--sidebar-w);
-            flex: 1;
-            padding: 28px 32px;
-            max-width: 1500px;
-        }
-        .topbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-        .topbar h1 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--primary);
-            letter-spacing: -0.3px;
-        }
-        .topbar .badge {
-            background: var(--accent);
-            color: #fff;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 0.78rem;
-            font-weight: 600;
-            letter-spacing: 0.3px;
-        }
-        .view-panel {
-            display: none;
-        }
-        .view-panel.active {
-            display: block;
-        }
+        .charts-row { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:20px; }
+        .chart-card { background:var(--surface); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow); border:1px solid var(--border); }
+        .chart-card h3 { font-size:0.88rem; font-weight:700; color:var(--primary); margin-bottom:12px; letter-spacing:0.2px; }
+        .chart-card canvas { max-height:280px; }
+        .chart-card.full { grid-column:1/-1; }
 
-        /* CARDS */
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-        .kpi-card {
-            background: var(--surface);
-            border-radius: var(--radius);
-            padding: 20px 22px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
-            transition: box-shadow var(--transition);
-        }
-        .kpi-card:hover {
-            box-shadow: var(--shadow-lg);
-        }
-        .kpi-card .kpi-label {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.6px;
-            color: var(--text-secondary);
-            margin-bottom: 6px;
-            font-weight: 600;
-        }
-        .kpi-card .kpi-value {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--primary);
-            letter-spacing: -0.5px;
-        }
-        .kpi-card .kpi-sub {
-            font-size: 0.78rem;
-            color: var(--text-secondary);
-            margin-top: 2px;
-        }
-        .kpi-card.accent .kpi-value {
-            color: var(--accent);
-        }
-        .kpi-card.success .kpi-value {
-            color: var(--success);
-        }
-        .kpi-card.danger .kpi-value {
-            color: var(--danger);
-        }
-        .kpi-card.info .kpi-value {
-            color: var(--info);
-        }
+        .form-card { background:var(--surface); border-radius:var(--radius); padding:22px; box-shadow:var(--shadow); border:1px solid var(--border); margin-bottom:18px; }
+        .form-card h3 { font-size:0.95rem; font-weight:700; color:var(--primary); margin-bottom:16px; border-bottom:2px solid var(--accent); padding-bottom:8px; display:inline-block; }
+        .form-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
+        .form-group { display:flex; flex-direction:column; gap:3px; }
+        .form-group label { font-size:0.72rem; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px; }
+        .form-group input { padding:9px 11px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:0.88rem; font-family:var(--font); transition:border var(--transition); background:#fafbfc; }
+        .form-group input:focus { outline:none; border-color:var(--primary-light); box-shadow:0 0 0 3px rgba(44,95,138,0.08); background:#fff; }
+        .form-group input:disabled { background:#e9ecef; color:#6c757d; cursor:not-allowed; }
+        .form-section-title { grid-column:1/-1; font-weight:700; font-size:0.8rem; color:var(--primary); margin-top:6px; padding-top:6px; border-top:1px solid var(--border); letter-spacing:0.3px; display:flex; align-items:center; gap:6px; }
 
-        /* CHARTS */
-        .charts-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 24px;
-        }
-        @media (max-width: 1000px) {
-            .charts-row {
-                grid-template-columns: 1fr;
-            }
-            .main {
-                padding: 16px;
-            }
-            .sidebar {
-                width: 200px;
-            }
-            .main {
-                margin-left: 200px;
-            }
-        }
-        .chart-card {
-            background: var(--surface);
-            border-radius: var(--radius);
-            padding: 20px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
-        }
-        .chart-card h3 {
-            font-size: 0.9rem;
-            font-weight: 700;
-            color: var(--primary);
-            margin-bottom: 14px;
-            letter-spacing: 0.2px;
-        }
-        .chart-card canvas {
-            max-height: 300px;
-        }
+        .btn { padding:9px 20px; border-radius:25px; font-weight:600; font-size:0.83rem; cursor:pointer; border:none; letter-spacing:0.2px; transition:all var(--transition); font-family:var(--font); }
+        .btn-primary { background:var(--primary); color:#fff; }
+        .btn-primary:hover { background:var(--primary-light); }
+        .btn-accent { background:var(--accent); color:#fff; }
+        .btn-accent:hover { background:var(--accent-light); }
+        .btn-outline { background:#fff; border:2px solid var(--primary); color:var(--primary); }
+        .btn-outline:hover { background:var(--primary); color:#fff; }
+        .btn-sm { padding:5px 12px; font-size:0.73rem; border-radius:18px; }
+        .btn-print { background:#fff; border:2px solid var(--info); color:var(--info); }
+        .btn-print:hover { background:var(--info); color:#fff; }
+        .btn-row { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
 
-        /* FORM */
-        .form-card {
-            background: var(--surface);
-            border-radius: var(--radius);
-            padding: 24px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
-            margin-bottom: 20px;
-        }
-        .form-card h3 {
-            font-size: 1rem;
-            font-weight: 700;
-            color: var(--primary);
-            margin-bottom: 18px;
-            letter-spacing: 0.2px;
-            border-bottom: 2px solid var(--accent);
-            padding-bottom: 10px;
-            display: inline-block;
-        }
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 14px;
-        }
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-        .form-group label {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-        }
-        .form-group input {
-            padding: 10px 12px;
-            border: 1.5px solid var(--border);
-            border-radius: var(--radius-sm);
-            font-size: 0.9rem;
-            font-family: var(--font);
-            transition: border var(--transition);
-            background: #fafbfc;
-        }
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--primary-light);
-            box-shadow: 0 0 0 3px rgba(44, 95, 138, 0.08);
-            background: #fff;
-        }
-        .form-group input:disabled {
-            background: #e9ecef;
-            color: #6c757d;
-            cursor: not-allowed;
-        }
-        .form-section-title {
-            grid-column: 1/-1;
-            font-weight: 700;
-            font-size: 0.82rem;
-            color: var(--primary);
-            margin-top: 8px;
-            padding-top: 8px;
-            border-top: 1px solid var(--border);
-            letter-spacing: 0.3px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .btn {
-            padding: 10px 22px;
-            border-radius: 25px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            cursor: pointer;
-            border: none;
-            letter-spacing: 0.3px;
-            transition: all var(--transition);
-            font-family: var(--font);
-        }
-        .btn-primary {
-            background: var(--primary);
-            color: #fff;
-        }
-        .btn-primary:hover {
-            background: var(--primary-light);
-        }
-        .btn-accent {
-            background: var(--accent);
-            color: #fff;
-        }
-        .btn-accent:hover {
-            background: var(--accent-light);
-        }
-        .btn-outline {
-            background: #fff;
-            border: 2px solid var(--primary);
-            color: var(--primary);
-        }
-        .btn-outline:hover {
-            background: var(--primary);
-            color: #fff;
-        }
-        .btn-sm {
-            padding: 6px 14px;
-            font-size: 0.75rem;
-            border-radius: 18px;
-        }
-        .btn-print {
-            background: #fff;
-            border: 2px solid var(--info);
-            color: var(--info);
-        }
-        .btn-print:hover {
-            background: var(--info);
-            color: #fff;
-        }
-        .btn-row {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-top: 16px;
-        }
+        .table-wrapper { overflow-x:auto; margin-top:6px; }
+        table { width:100%; border-collapse:collapse; font-size:0.8rem; }
+        table th, table td { padding:9px 10px; text-align:right; border-bottom:1px solid var(--border); }
+        table th { background:#f7f8fa; font-weight:700; color:var(--primary); font-size:0.68rem; text-transform:uppercase; letter-spacing:0.4px; position:sticky; top:0; }
+        table td:first-child, table th:first-child { text-align:left; font-weight:600; }
+        table tbody tr:hover { background:#fafcfd; }
+        .highlight-row { background:#fff8e1 !important; font-weight:700; }
+        .negative { color:var(--danger); }
+        .positive { color:var(--success); }
+        .section-divider { background:#e8edf2 !important; font-weight:700; color:var(--primary); }
+        .section-divider td { padding:7px 10px; font-size:0.73rem; text-transform:uppercase; letter-spacing:0.5px; }
 
-        /* TABLE */
-        .table-wrapper {
-            overflow-x: auto;
-            margin-top: 8px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.82rem;
-        }
-        table th,
-        table td {
-            padding: 10px 12px;
-            text-align: right;
-            border-bottom: 1px solid var(--border);
-        }
-        table th {
-            background: #f7f8fa;
-            font-weight: 700;
-            color: var(--primary);
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            position: sticky;
-            top: 0;
-        }
-        table td:first-child,
-        table th:first-child {
-            text-align: left;
-            font-weight: 600;
-        }
-        table tbody tr:hover {
-            background: #fafcfd;
-        }
-        .highlight-row {
-            background: #fff8e1 !important;
-            font-weight: 700;
-        }
-        .negative {
-            color: var(--danger);
-        }
-        .section-divider {
-            background: #e8edf2 !important;
-            font-weight: 700;
-            color: var(--primary);
-            pointer-events: none;
-        }
-        .section-divider td {
-            padding: 8px 12px;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+        .toast { position:fixed; bottom:24px; right:24px; background:var(--success); color:#fff; padding:11px 20px; border-radius:25px; font-weight:600; font-size:0.83rem; box-shadow:var(--shadow-lg); z-index:999; animation:slideUp .35s ease; }
+        @keyframes slideUp { from { transform:translateY(60px); opacity:0; } to { transform:translateY(0); opacity:1; } }
 
-        /* TOAST */
-        .toast {
-            position: fixed;
-            bottom: 28px;
-            right: 28px;
-            background: var(--success);
-            color: #fff;
-            padding: 12px 22px;
-            border-radius: 25px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            box-shadow: var(--shadow-lg);
-            z-index: 999;
-            animation: slideUp 0.35s ease;
-        }
-        @keyframes slideUp {
-            from {
-                transform: translateY(60px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
+        .perspective-bar { display:flex; gap:0; margin-bottom:18px; border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow); }
+        .perspective-bar .p-tab { flex:1; text-align:center; padding:12px 8px; font-size:0.78rem; font-weight:700; letter-spacing:0.3px; cursor:pointer; transition:all var(--transition); border:none; font-family:var(--font); color:rgba(255,255,255,0.85); }
+        .perspective-bar .p-tab:hover { filter:brightness(1.1); }
+        .perspective-bar .p-tab.active { filter:brightness(1); box-shadow:inset 0 -3px 0 rgba(255,255,255,0.5); color:#fff; }
+        .p-tab-devengado { background:var(--primary); }
+        .p-tab-caja { background:var(--cash); }
+        .p-tab-dso { background:var(--dso); }
+        .p-tab-compare { background:var(--danger); }
 
-        /* PRINT STYLES */
+        .sub-panel { display:none; }
+        .sub-panel.active { display:block; }
+
+        .mini-charts-row { display:flex; gap:18px; justify-content:space-between; margin-top:18px; flex-wrap:wrap; }
+        .mini-chart { flex:1; min-width:170px; max-width:240px; background:var(--surface); border-radius:var(--radius); padding:14px; box-shadow:var(--shadow); border:1px solid var(--border); text-align:center; }
+        .mini-chart h4 { font-size:0.78rem; font-weight:700; color:var(--primary); margin-bottom:8px; }
+        .mini-chart canvas { max-height:150px; margin:0 auto; }
+
+        .stat-pill { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px; font-size:0.73rem; font-weight:700; font-family:var(--mono); }
+        .stat-pill.up { background:#e8f5e9; color:var(--success); }
+        .stat-pill.down { background:#ffebee; color:var(--danger); }
+        .stat-pill.neutral { background:#e3f2fd; color:var(--info); }
+
+        .alert-box { padding:14px 18px; border-radius:var(--radius-sm); margin-bottom:16px; font-size:0.82rem; line-height:1.5; border-left:4px solid; }
+        .alert-box.warning { background:#fff8e1; border-color:var(--warning); color:#5d4037; }
+        .alert-box.info { background:#e3f2fd; border-color:var(--info); color:#1a237e; }
+        .alert-box.danger { background:#ffebee; border-color:var(--danger); color:#b71c1c; }
+        .alert-box.success { background:#e8f5e9; border-color:var(--success); color:#1b5e20; }
+
+        .sync-indicator { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; }
+        .sync-ok { background:#2e7d32; }
+        .sync-pending { background:#f9a825; animation:pulse 1s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+        @media (max-width:1000px) {
+            .charts-row { grid-template-columns:1fr; }
+            .main { padding:14px; }
+            .sidebar { width:200px; }
+            .main { margin-left:200px; }
+        }
         @media print {
-            body {
-                background: #fff !important;
-                display: block !important;
-                font-size: 11px;
-                margin: 0;
-                padding: 0;
-                color: #000;
-            }
-            .sidebar,
-            .btn-row,
-            .toast,
-            button:not(.keep-print),
-            .no-print,
-            .form-card:not(#resumenMensualCard) {
-                display: none !important;
-            }
-            .main {
-                margin-left: 0 !important;
-                padding: 10px !important;
-                max-width: 100% !important;
-            }
-            .view-panel {
-                display: none !important;
-            }
-            .view-panel.active {
-                display: block !important;
-                page-break-inside: avoid;
-            }
-            .form-card,
-            .chart-card,
-            .kpi-card {
-                box-shadow: none !important;
-                border: 1px solid #ccc !important;
-                page-break-inside: avoid;
-                background: #fff !important;
-            }
-            .kpi-grid {
-                grid-template-columns: repeat(4, 1fr);
-            }
-            .charts-row {
-                grid-template-columns: 1fr 1fr;
-            }
-            .topbar .badge {
-                background: #eee !important;
-                color: #000 !important;
-                border: 1px solid #ccc;
-            }
-            .topbar h1 {
-                color: #000 !important;
-            }
-            canvas {
-                max-height: 200px !important;
-            }
-            .keep-print {
-                display: inline-block !important;
-            }
-            .table-wrapper table {
-                font-size: 9px;
-            }
-        }
-
-        /* Mini charts container */
-        .mini-charts-row {
-            display: flex;
-            gap: 20px;
-            justify-content: space-between;
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-        .mini-chart {
-            flex: 1;
-            min-width: 180px;
-            max-width: 250px;
-            background: var(--surface);
-            border-radius: var(--radius);
-            padding: 16px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
-            text-align: center;
-        }
-        .mini-chart h4 {
-            font-size: 0.8rem;
-            font-weight: 700;
-            color: var(--primary);
-            margin-bottom: 10px;
-            letter-spacing: 0.2px;
-        }
-        .mini-chart canvas {
-            max-height: 160px;
-            margin: 0 auto;
+            body { background:#fff !important; display:block !important; font-size:10px; }
+            .sidebar, .btn-row, .toast, .no-print { display:none !important; }
+            .main { margin-left:0 !important; padding:8px !important; max-width:100% !important; }
+            .view-panel { display:none !important; }
+            .view-panel.active { display:block !important; }
+            .form-card, .chart-card, .kpi-card { box-shadow:none !important; border:1px solid #ccc !important; background:#fff !important; }
+            canvas { max-height:180px !important; }
         }
     </style>
 </head>
 <body>
-    <!-- LOGIN SCREEN -->
     <div class="login-overlay" id="loginOverlay">
         <div class="login-card">
             <h2>DIVISIÓN ARBOLEDA HPS-IMPORT</h2>
-            <div class="subtitle">Dashboard de Rentabilidad HPS-IMPORT</div>
+            <div class="subtitle">Dashboard Integral de Rentabilidad 2026</div>
             <input type="text" id="loginUsername" placeholder="Usuario" autocomplete="off">
             <input type="password" id="loginPassword" placeholder="Contraseña">
             <button class="btn-login" onclick="iniciarSesion()">Ingresar</button>
             <div class="error-msg" id="loginError"></div>
-            <div class="hint">Usuarios Invitados:<br>Ingresar Usurio: invitado / Pass: invitado</div>
+            <div class="hint">Invitado: invitado / invitado</div>
         </div>
     </div>
 
-    <!-- SIDEBAR (oculto hasta login) -->
     <aside class="sidebar no-print" id="sidebar" style="display:none;">
         <div class="sidebar-header">
-            <h2>DIVISIÓN ARBOLEDA <br>HPS-IMPORT</h2>
-            <div class="subtitle">Dashboard de Rentabilidad HPS-IMPORT</div>
+            <h2>DIVISIÓN ARBOLEDA<br>HPS-IMPORT</h2>
+            <div class="subtitle">Dashboard Integral 2026</div>
         </div>
         <nav class="sidebar-nav">
-            <div class="nav-section">Mensual</div>
+            <div class="nav-section">Entrada Mensual</div>
             <button data-view="monthly" data-month="0" class="active">📅 Enero</button>
             <button data-view="monthly" data-month="1">📅 Febrero</button>
             <button data-view="monthly" data-month="2">📅 Marzo</button>
@@ -675,967 +207,817 @@
             <button data-view="monthly" data-month="9">📅 Octubre</button>
             <button data-view="monthly" data-month="10">📅 Noviembre</button>
             <button data-view="monthly" data-month="11">📅 Diciembre</button>
-            <div class="nav-section" style="margin-top:8px;">Consolidado</div>
+            <div class="nav-section" style="margin-top:8px;">Análisis Integral</div>
+            <button data-view="integral" style="font-weight:700;">🔄 Rentabilidad Integral</button>
             <button data-view="annual" style="font-weight:700;">📊 Total General Anual</button>
             <button data-view="dashboard" style="font-weight:700;">📈 Dashboard KPIs</button>
         </nav>
         <div class="sidebar-footer">
             <span id="loggedUserLabel"></span>
-            <button class="btn-logout" onclick="cerrarSesion()">Salir</button>
+            <span style="display:flex;align-items:center;gap:4px;"><span class="sync-indicator sync-ok" id="syncDot"></span><button class="btn-logout" onclick="cerrarSesion()">Salir</button></span>
         </div>
     </aside>
 
-    <!-- MAIN (oculto hasta login) -->
     <main class="main" id="mainContent" style="display:none;">
-        <!-- PANEL: FORMULARIO MENSUAL -->
         <div class="view-panel active" id="view-monthly">
             <div class="topbar">
                 <h1 id="monthTitle">📅 Enero 2026</h1>
-                <div style="display:flex;gap:10px;align-items:center;">
-                    <span class="badge" id="exchangeBadge">Tasa: RD$ 63/US$</span>
-                    <button class="btn btn-print btn-sm keep-print" onclick="imprimirVista()">🖨️ Imprimir</button>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <span class="badge badge-primary" id="exchangeBadge">Tasa: RD$ 63/US$</span>
+                    <button class="btn btn-print btn-sm" onclick="window.print()">🖨️</button>
                 </div>
             </div>
             <div class="form-card no-print" id="formEdicionMensual">
-                <h3>Datos del Mes</h3>
+                <h3>Datos del Mes — Devengado (Facturación)</h3>
                 <div class="form-grid" id="monthlyForm">
-                    <div class="form-group">
-                        <label>Tipo de Cambio (RD$/US$)</label>
-                        <input type="number" id="tasaCambio" step="0.01" value="63">
-                    </div>
-                    <div class="form-section-title">💰 Ventas (USD)</div>
-                    <div class="form-group">
-                        <label>Ventas HPS Brutas (US$)</label>
-                        <input type="number" id="ventasHPSBrutasUSD" step="0.01" value="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Ventas Import Brutas (US$)</label>
-                        <input type="number" id="ventasImportBrutasUSD" step="0.01" value="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Ventas HPS Netas (US$)</label>
-                        <input type="number" id="ventasHPSNetasUSD" step="0.01" value="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Ventas Import Netas (US$)</label>
-                        <input type="number" id="ventasImportNetasUSD" step="0.01" value="0">
-                    </div>
+                    <div class="form-group"><label>Tipo de Cambio (RD$/US$)</label><input type="number" id="tasaCambio" step="0.01" value="63"></div>
+                    <div class="form-section-title">💰 Ventas Facturadas (USD)</div>
+                    <div class="form-group"><label>Ventas HPS Brutas (US$)</label><input type="number" id="ventasHPSBrutasUSD" step="0.01" value="0"></div>
+                    <div class="form-group"><label>Ventas Import Brutas (US$)</label><input type="number" id="ventasImportBrutasUSD" step="0.01" value="0"></div>
+                    <div class="form-group"><label>Ventas HPS Netas (US$)</label><input type="number" id="ventasHPSNetasUSD" step="0.01" value="0"></div>
+                    <div class="form-group"><label>Ventas Import Netas (US$)</label><input type="number" id="ventasImportNetasUSD" step="0.01" value="0"></div>
+                    <div class="form-section-title">💵 Ingresos Cobrados (USD) — Flujo de Caja</div>
+                    <div class="form-group"><label>Total Cobrado Bruto (US$)</label><input type="number" id="ingresosCobradosBrutoUSD" step="0.01" value="0"></div>
                     <div class="form-section-title">📦 Compras / Suplidores (USD)</div>
-                    <div class="form-group">
-                        <label>ASSA ABLOY GLOBAL SOL. (US$)</label>
-                        <input type="number" id="assaAbloyUSD" step="0.01" value="0">
-                    </div>
-                    <div class="form-group">
-                        <label>ADUANAS (US$)</label>
-                        <input type="number" id="aduanasUSD" step="0.01" value="0">
-                    </div>
+                    <div class="form-group"><label>ASSA ABLOY GLOBAL SOL. (US$)</label><input type="number" id="assaAbloyUSD" step="0.01" value="0"></div>
+                    <div class="form-group"><label>ADUANAS (US$)</label><input type="number" id="aduanasUSD" step="0.01" value="0"></div>
                     <div class="form-section-title">📋 Otros Suplidores</div>
-                    <div id="otrosSuplidoresContainer" style="grid-column:1/-1; display:flex; flex-direction:column; gap:8px;"></div>
-                    <button type="button" class="btn btn-outline btn-sm" id="btnAgregarSuplidor" onclick="agregarSuplidor()" style="grid-column:1/-1; justify-self:start;">+ Agregar Suplidor</button>
+                    <div id="otrosSuplidoresContainer" style="grid-column:1/-1;display:flex;flex-direction:column;gap:6px;"></div>
+                    <button type="button" class="btn btn-outline btn-sm" id="btnAgregarSuplidor" onclick="agregarSuplidor()" style="grid-column:1/-1;justify-self:start;">+ Agregar Suplidor</button>
                     <div class="form-section-title">📊 Inventarios (USD)</div>
-                    <div class="form-group">
-                        <label>Inventario Inicial (US$)</label>
-                        <input type="number" id="invInicialUSD" step="0.01" value="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Inventario Final (US$)</label>
-                        <input type="number" id="invFinalUSD" step="0.01" value="0">
-                    </div>
+                    <div class="form-group"><label>Inventario Inicial (US$)</label><input type="number" id="invInicialUSD" step="0.01" value="0"></div>
+                    <div class="form-group"><label>Inventario Final (US$)</label><input type="number" id="invFinalUSD" step="0.01" value="0"></div>
                     <div class="form-section-title">💼 Gastos Administrativos (RD$)</div>
-                    <div class="form-group">
-                        <label>Nómina Global (RD$)</label>
-                        <input type="number" id="nominaRD" step="0.01" value="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Caja Chica (RD$)</label>
-                        <input type="number" id="cajaChicaRD" step="0.01" value="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Eventos y Publicidad (RD$)</label>
-                        <input type="number" id="eventosRD" step="0.01" value="28450">
-                    </div>
-                    <div class="form-group">
-                        <label>Correos Electrónicos (RD$)</label>
-                        <input type="number" id="correosRD" step="0.01" value="4091.25">
-                    </div>
-                    <div class="form-group">
-                        <label>Seguro Guagua HPS (RD$)</label>
-                        <input type="number" id="seguroGuaguaRD" step="0.01" value="3683.71">
-                    </div>
-                    <div class="form-group">
-                        <label>Combustible Guagua HPS (US$)</label>
-                        <input type="number" id="combustibleUSD" step="0.01" value="270">
-                    </div>
-                    <div class="form-group">
-                        <label>Intereses Fin. Vehículo HPS (US$)</label>
-                        <input type="number" id="interesesUSD" step="0.01" value="49.76">
-                    </div>
-                    <div class="form-group">
-                        <label>Combustible Asig. Alejandro P. (RD$)</label>
-                        <input type="number" id="combAlejandroRD" step="0.01" value="10000">
-                    </div>
-                    <div class="form-group">
-                        <label>Teléfonos / Data (US$)</label>
-                        <input type="number" id="telefonosUSD" step="0.01" value="63.17">
-                    </div>
-                    <div class="form-group">
-                        <label>Gastos de Viajes (RD$)</label>
-                        <input type="number" id="viajesRD" step="0.01" value="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Electricidad, Agua y Otros (US$)</label>
-                        <input type="number" id="electricidadUSD" step="0.01" value="144.42">
-                    </div>
-                    <div class="form-group">
-                        <label>Depreciación General (US$)</label>
-                        <input type="number" id="depreciacionUSD" step="0.01" value="72.17">
-                    </div>
-                    <div class="form-group">
-                        <label>Seguros Generales Empresa (US$)</label>
-                        <input type="number" id="segurosGenUSD" step="0.01" value="45.57">
-                    </div>
+                    <div class="form-group"><label>Nómina Global (RD$)</label><input type="number" id="nominaRD" step="0.01" value="0"></div>
+                    <div class="form-group"><label>Caja Chica (RD$)</label><input type="number" id="cajaChicaRD" step="0.01" value="0"></div>
+                    <div class="form-group"><label>Eventos y Publicidad (RD$)</label><input type="number" id="eventosRD" step="0.01" value="28450"></div>
+                    <div class="form-group"><label>Correos Electrónicos (RD$)</label><input type="number" id="correosRD" step="0.01" value="4091.25"></div>
+                    <div class="form-group"><label>Seguro Guagua HPS (RD$)</label><input type="number" id="seguroGuaguaRD" step="0.01" value="3683.71"></div>
+                    <div class="form-group"><label>Combustible Guagua HPS (US$)</label><input type="number" id="combustibleUSD" step="0.01" value="270"></div>
+                    <div class="form-group"><label>Intereses Fin. Vehículo HPS (US$)</label><input type="number" id="interesesUSD" step="0.01" value="49.76"></div>
+                    <div class="form-group"><label>Combustible Asig. Alejandro P. (RD$)</label><input type="number" id="combAlejandroRD" step="0.01" value="10000"></div>
+                    <div class="form-group"><label>Teléfonos / Data (US$)</label><input type="number" id="telefonosUSD" step="0.01" value="63.17"></div>
+                    <div class="form-group"><label>Gastos de Viajes (RD$)</label><input type="number" id="viajesRD" step="0.01" value="0"></div>
+                    <div class="form-group"><label>Electricidad, Agua y Otros (US$)</label><input type="number" id="electricidadUSD" step="0.01" value="144.42"></div>
+                    <div class="form-group"><label>Depreciación General (US$)</label><input type="number" id="depreciacionUSD" step="0.01" value="72.17"></div>
+                    <div class="form-group"><label>Seguros Generales Empresa (US$)</label><input type="number" id="segurosGenUSD" step="0.01" value="45.57"></div>
                     <div class="form-section-title">📞 Visitas y Contactos</div>
-                    <div class="form-group">
-                        <label>Total Visitas/Contactos (#)</label>
-                        <input type="number" id="totalVisitas" step="1" value="0">
-                    </div>
-                    <div class="form-group">
-                        <label>% Visitas Presenciales</label>
-                        <input type="number" id="pctVisitas" step="0.1" value="0" min="0" max="100">
-                    </div>
-                    <div class="form-group">
-                        <label>% Llamadas / WhatsApp</label>
-                        <input type="number" id="pctLlamadas" step="0.1" value="0" min="0" max="100">
-                    </div>
-                    <div class="form-group">
-                        <label>% Emails</label>
-                        <input type="number" id="pctEmails" step="0.1" value="0" min="0" max="100">
-                    </div>
+                    <div class="form-group"><label>Total Visitas/Contactos (#)</label><input type="number" id="totalVisitas" step="1" value="0"></div>
+                    <div class="form-group"><label>% Visitas Presenciales</label><input type="number" id="pctVisitas" step="0.1" value="0" min="0" max="100"></div>
+                    <div class="form-group"><label>% Llamadas / WhatsApp</label><input type="number" id="pctLlamadas" step="0.1" value="0" min="0" max="100"></div>
+                    <div class="form-group"><label>% Emails</label><input type="number" id="pctEmails" step="0.1" value="0" min="0" max="100"></div>
                     <div class="form-section-title">📝 Presupuestos Realizados</div>
-                    <div class="form-group">
-                        <label>Cantidad Presupuestos (#)</label>
-                        <input type="number" id="cantPresupuestos" step="1" value="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Monto Total Presupuestado (US$)</label>
-                        <input type="number" id="montoPresupuestadoUSD" step="0.01" value="0">
-                    </div>
-                    <div class="form-section-title">✅ Presupuestos Aprobados (Cerrados)</div>
-                    <div class="form-group">
-                        <label>Cantidad Aprobados (#)</label>
-                        <input type="number" id="cantAprobados" step="1" value="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Valor Total Cerrado (US$)</label>
-                        <input type="number" id="valorCerradoUSD" step="0.01" value="0">
-                    </div>
+                    <div class="form-group"><label>Cantidad Presupuestos (#)</label><input type="number" id="cantPresupuestos" step="1" value="0"></div>
+                    <div class="form-group"><label>Monto Total Presupuestado (US$)</label><input type="number" id="montoPresupuestadoUSD" step="0.01" value="0"></div>
+                    <div class="form-section-title">✅ Presupuestos Aprobados</div>
+                    <div class="form-group"><label>Cantidad Aprobados (#)</label><input type="number" id="cantAprobados" step="1" value="0"></div>
+                    <div class="form-group"><label>Valor Total Cerrado (US$)</label><input type="number" id="valorCerradoUSD" step="0.01" value="0"></div>
                 </div>
                 <div class="btn-row no-print">
-                    <button class="btn btn-primary" id="btnGuardarMes" onclick="guardarMes()">💾 Guardar Datos del Mes</button>
-                    <button class="btn btn-outline" id="btnCargarMes" onclick="cargarDatosMes()">🔄 Cargar Último Guardado</button>
-                    <button class="btn btn-accent" id="btnVerResumen" onclick="calcularYMostrarResumen()">📊 Ver Resumen Mensual</button>
+                    <button class="btn btn-primary" id="btnGuardarMes" onclick="guardarMes()">💾 Guardar</button>
+                    <button class="btn btn-outline" id="btnCargarMes" onclick="cargarDatosMes()">🔄 Recargar</button>
+                    <button class="btn btn-accent" id="btnVerResumen" onclick="calcularYMostrarResumen()">📊 Ver Resumen</button>
                 </div>
             </div>
-            <!-- RESUMEN MENSUAL CALCULADO -->
-            <div class="form-card" id="resumenMensualCard">
-                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-                    <h3 style="margin-bottom:0;border-bottom:none;">📋 Resumen Mensual Detallado</h3>
-                    <button class="btn btn-print btn-sm keep-print" onclick="imprimirVista()">🖨️ Imprimir</button>
+            <div class="form-card" id="resumenMensualCard" style="display:none;">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                    <h3 style="margin-bottom:0;border-bottom:none;">📋 Resumen Mensual</h3>
+                    <button class="btn btn-print btn-sm" onclick="window.print()">🖨️</button>
                 </div>
                 <div id="resumenMensualContent"></div>
             </div>
         </div>
 
-        <!-- PANEL: TOTAL GENERAL ANUAL -->
-        <div class="view-panel" id="view-annual">
-            <div class="topbar">
-                <h1>📊 Total General Anual 2026</h1>
-                <div style="display:flex;gap:10px;align-items:center;">
-                    <span class="badge">Acumulado 12 meses</span>
-                    <button class="btn btn-print btn-sm keep-print" onclick="imprimirVista()">🖨️ Imprimir</button>
-                </div>
+        <div class="view-panel" id="view-integral">
+            <div class="topbar"><h1>🔄 Rentabilidad Integral 2026</h1><button class="btn btn-print btn-sm" onclick="window.print()">🖨️</button></div>
+            <div class="perspective-bar no-print">
+                <button class="p-tab p-tab-devengado active" onclick="switchPerspective('devengado')">📄 DEVENGADO</button>
+                <button class="p-tab p-tab-caja" onclick="switchPerspective('caja')">💵 FLUJO CAJA</button>
+                <button class="p-tab p-tab-dso" onclick="switchPerspective('dso')">⏱ DESFASE / DSO</button>
+                <button class="p-tab p-tab-compare" onclick="switchPerspective('compare')">⚖️ COMPARATIVO</button>
             </div>
-            <div class="kpi-grid" id="kpiAnnual"></div>
-            <div class="kpi-grid" id="kpiComercialAnnual"></div>
-            <div class="chart-card mb-4">
-                <h3>Evolución Mensual de Ventas Netas (USD)</h3>
-                <canvas id="chartVentasAnual"></canvas>
-            </div>
-            <div class="chart-card mb-4">
-                <h3>KPIs Comerciales Mensuales (%)</h3>
-                <canvas id="chartKPIsComerciales"></canvas>
-            </div>
-            <div class="chart-card mb-4">
-                <h3>Margen Bruto vs Margen Neto Mensual (%)</h3>
-                <canvas id="chartMargenesAnual"></canvas>
-            </div>
-            <div class="form-card">
-                <h3>📋 Detalle Anual Consolidado</h3>
-                <div class="table-wrapper" id="tablaAnual"></div>
-            </div>
+            <div class="sub-panel active" id="sp-devengado"></div>
+            <div class="sub-panel" id="sp-caja"></div>
+            <div class="sub-panel" id="sp-dso"></div>
+            <div class="sub-panel" id="sp-compare"></div>
         </div>
 
-        <!-- PANEL: DASHBOARD KPIs -->
+        <div class="view-panel" id="view-annual">
+            <div class="topbar"><h1>📊 Total General Anual 2026</h1><span class="badge badge-primary">Acumulado</span></div>
+            <div class="kpi-grid" id="kpiAnnual"></div>
+            <div class="kpi-grid" id="kpiComercialAnnual"></div>
+            <div class="chart-card" style="margin-bottom:18px;"><h3>Ventas Netas Mensuales (USD)</h3><canvas id="chartVentasAnual"></canvas></div>
+            <div class="chart-card" style="margin-bottom:18px;"><h3>KPIs Comerciales (%)</h3><canvas id="chartKPIsComerciales"></canvas></div>
+            <div class="chart-card" style="margin-bottom:18px;"><h3>Margen Bruto vs Neto (%)</h3><canvas id="chartMargenesAnual"></canvas></div>
+            <div class="form-card"><h3>📋 Detalle Anual</h3><div class="table-wrapper" id="tablaAnual"></div></div>
+        </div>
+
         <div class="view-panel" id="view-dashboard">
-            <div class="topbar">
-                <h1>📈 Dashboard de KPIs</h1>
-                <div style="display:flex;gap:10px;align-items:center;">
-                    <span class="badge">Visión Global 2026</span>
-                    <button class="btn btn-print btn-sm keep-print" onclick="imprimirVista()">🖨️ Imprimir</button>
-                </div>
-            </div>
+            <div class="topbar"><h1>📈 Dashboard de KPIs</h1><span class="badge badge-primary">Visión Global 2026</span></div>
             <div class="kpi-grid" id="kpiDashboard"></div>
             <div class="kpi-grid" id="kpiDashboardComercial"></div>
             <div class="charts-row">
-                <div class="chart-card">
-                    <h3>Composición de Ventas Netas (USD)</h3>
-                    <canvas id="chartPieVentas"></canvas>
-                </div>
-                <div class="chart-card">
-                    <h3>Gastos Operativos por Categoría (RD$)</h3>
-                    <canvas id="chartGastosCat"></canvas>
-                </div>
+                <div class="chart-card"><h3>Composición Ventas Netas</h3><canvas id="chartPieVentas"></canvas></div>
+                <div class="chart-card"><h3>Gastos por Categoría (RD$)</h3><canvas id="chartGastosCat"></canvas></div>
             </div>
             <div class="charts-row">
-                <div class="chart-card">
-                    <h3>Beneficio Neto Mensual (USD)</h3>
-                    <canvas id="chartBeneficioNeto"></canvas>
-                </div>
-                <div class="chart-card">
-                    <h3>Ratio Gastos / Ventas Netas (%)</h3>
-                    <canvas id="chartRatioGastos"></canvas>
-                </div>
+                <div class="chart-card"><h3>Beneficio Neto Mensual (USD)</h3><canvas id="chartBeneficioNeto"></canvas></div>
+                <div class="chart-card"><h3>Ratio Gastos / Ventas (%)</h3><canvas id="chartRatioGastos"></canvas></div>
             </div>
         </div>
     </main>
 
-    <script>
-        // --- SISTEMA DE AUTENTICACIÓN ---
-        const USUARIOS = {
-            'admin': { password: 'admin123', rol: 'admin', nombre: 'Administrador' },
-            'gerente': { password: 'gerente123', rol: 'admin', nombre: 'Gerente' },
-            'invitado': { password: 'invitado', rol: 'invitado', nombre: 'Invitado' }
-        };
+<script>
+// ===========================
+// CONFIGURACIÓN JSONBIN.IO
+// ===========================
+const JSONBIN_API_KEY = '$2a$10$b9o.f47WPvbdYcpPTAYaheNddQDe3H6iaPlcnAfffDDkBBm6x3VHS';
+const JSONBIN_BIN_ID = '6a05d394250b1311c34cccc6';
 
-        let usuarioActual = null;
+// ===========================
+// AUTH
+// ===========================
+const USUARIOS = {
+    'admin': { password:'admin123', rol:'admin', nombre:'Administrador' },
+    'gerente': { password:'gerente123', rol:'admin', nombre:'Gerente' },
+    'invitado': { password:'invitado', rol:'invitado', nombre:'Invitado' }
+};
+let usuarioActual = null;
 
-        window.imprimirVista = function() {
-            window.print();
-        };
+window.iniciarSesion = async function() {
+    const u = document.getElementById('loginUsername').value.trim().toLowerCase();
+    const p = document.getElementById('loginPassword').value;
+    const err = document.getElementById('loginError');
+    err.textContent = '';
+    if (!u || !p) { err.textContent = 'Ingrese usuario y contraseña.'; return; }
+    const user = USUARIOS[u];
+    if (!user || user.password !== p) { err.textContent = 'Credenciales incorrectas.'; return; }
+    usuarioActual = { username:u, rol:user.rol, nombre:user.nombre };
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('sidebar').style.display = 'flex';
+    document.getElementById('mainContent').style.display = 'block';
+    document.getElementById('loggedUserLabel').textContent = usuarioActual.nombre;
+    await initDatos();
+    aplicarPermisos();
+    configurarNavegacion();
+    if (usuarioActual.rol === 'admin') { setActiveView('monthly', 0); }
+    else { currentMonth=0; document.getElementById('view-monthly').classList.add('active'); cargarFormularioMes(0); document.getElementById('resumenMensualCard').style.display='block'; calcularYMostrarResumen(); }
+};
+window.cerrarSesion = function() {
+    usuarioActual = null;
+    document.getElementById('loginOverlay').style.display = 'flex';
+    document.getElementById('sidebar').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'none';
+    destroyAllCharts();
+};
+function aplicarPermisos() {
+    const esAdmin = usuarioActual && usuarioActual.rol === 'admin';
+    const form = document.getElementById('formEdicionMensual');
+    if (form) form.style.display = esAdmin ? 'block' : 'none';
+    document.querySelectorAll('#monthlyForm input').forEach(i => i.disabled = !esAdmin);
+    ['btnGuardarMes','btnCargarMes','btnVerResumen','btnAgregarSuplidor'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = esAdmin ? 'inline-block' : 'none';
+    });
+}
+function configurarNavegacion() {
+    document.querySelectorAll('.sidebar-nav button[data-view]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const v = this.dataset.view;
+            const m = this.dataset.month !== undefined ? parseInt(this.dataset.month) : null;
+            setActiveView(v, m);
+        });
+    });
+}
 
-        window.iniciarSesion = function() {
-            const username = document.getElementById('loginUsername').value.trim();
-            const password = document.getElementById('loginPassword').value;
-            const errorDiv = document.getElementById('loginError');
-            errorDiv.textContent = '';
+// ===========================
+// PERSISTENCIA JSONBIN
+// ===========================
+async function cargarDatosRemotos() {
+    try {
+        const resp = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest?ts=${Date.now()}`, {
+            headers: { 'X-Master-Key': JSONBIN_API_KEY }
+        });
+        if (!resp.ok) throw new Error('Error al cargar datos remotos');
+        const data = await resp.json();
+        if (data.record && data.record.data && Array.isArray(data.record.data) && data.record.data.length === 12) {
+            datosMensuales = data.record.data;
+        } else if (data.record && Array.isArray(data.record) && data.record.length === 12) {
+            datosMensuales = data.record;
+        } else {
+            throw new Error('Formato inválido');
+        }
+        actualizarIndicadorSync(true);
+        return true;
+    } catch (error) {
+        console.warn('Cargando respaldo local:', error.message);
+        actualizarIndicadorSync(false);
+        return false;
+    }
+}
 
-            if (!username || !password) {
-                errorDiv.textContent = 'Ingrese usuario y contraseña.';
-                return;
+async function guardarDatosRemotos() {
+    try {
+        const resp = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY },
+            body: JSON.stringify({ data: datosMensuales })
+        });
+        if (!resp.ok) throw new Error('Error al guardar datos remotos');
+        actualizarIndicadorSync(true);
+        return true;
+    } catch (error) {
+        console.error('Error al guardar en la nube:', error.message);
+        actualizarIndicadorSync(false);
+        mostrarToast('⚠️ Sin conexión al servidor. Los cambios se guardarán localmente.');
+        return false;
+    }
+}
+
+function actualizarIndicadorSync(ok) {
+    const dot = document.getElementById('syncDot');
+    if (dot) {
+        dot.className = 'sync-indicator ' + (ok ? 'sync-ok' : 'sync-pending');
+        dot.title = ok ? 'Datos sincronizados' : 'Sin conexión - cambios locales';
+    }
+}
+
+// ===========================
+// DATA
+// ===========================
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MESES_SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const DIAS_MES = [31,28,31,30,31,30,31,31,30,31,30,31];
+let currentMonth = 0;
+let datosMensuales = [];
+let nextId = Date.now();
+let _charts = {};
+
+function destroyAllCharts() { Object.values(_charts).forEach(c => { if(c) c.destroy(); }); _charts = {}; }
+function destroyChart(name) { if(_charts[name]) { _charts[name].destroy(); delete _charts[name]; } }
+
+async function initDatos() {
+    const exito = await cargarDatosRemotos();
+    if (!exito || !Array.isArray(datosMensuales) || datosMensuales.length !== 12) {
+        datosMensuales = crearEstructuraVacia();
+        precargarDatos();
+        await guardarDatosRemotos();
+    } else {
+        // Normalizar IDs en suplidores si no existen
+        datosMensuales.forEach(d => {
+            if (d.otrosSuplidores) {
+                d.otrosSuplidores.forEach(s => { if (!s.id) s.id = nextId++; });
             }
+        });
+    }
+}
 
-            const user = USUARIOS[username.toLowerCase()];
-            if (!user || user.password !== password) {
-                errorDiv.textContent = 'Credenciales incorrectas.';
-                return;
-            }
+function crearEstructuraVacia() {
+    return Array.from({length:12}, () => ({
+        tasaCambio:61, ventasHPSBrutasUSD:0, ventasImportBrutasUSD:0, ventasHPSNetasUSD:0, ventasImportNetasUSD:0,
+        assaAbloyUSD:0, aduanasUSD:0, otrosSuplidores:[], invInicialUSD:0, invFinalUSD:0,
+        nominaRD:0, cajaChicaRD:0, eventosRD:28450, correosRD:4091.25, seguroGuaguaRD:3683.71,
+        combustibleUSD:270, interesesUSD:49.76, combAlejandroRD:10000, telefonosUSD:63.17, viajesRD:0,
+        electricidadUSD:144.42, depreciacionUSD:72.17, segurosGenUSD:45.57,
+        totalVisitas:0, pctVisitas:0, pctLlamadas:0, pctEmails:0,
+        cantPresupuestos:0, montoPresupuestadoUSD:0, cantAprobados:0, valorCerradoUSD:0,
+        ingresosCobradosBrutoUSD:0
+    }));
+}
 
-            usuarioActual = { username: username.toLowerCase(), rol: user.rol, nombre: user.nombre };
+function precargarDatos() {
+    // Enero
+    Object.assign(datosMensuales[0], {
+        tasaCambio:63, ventasHPSBrutasUSD:79208.06, ventasImportBrutasUSD:83204.5,
+        ventasHPSNetasUSD:67125.47, ventasImportNetasUSD:70512.29,
+        assaAbloyUSD:0, aduanasUSD:2385.94,
+        otrosSuplidores:[{id:nextId++,nombre:'APLIK INGENIERIA',valorUSD:902.18},{id:nextId++,nombre:'COMPRAS POR INTERNET',valorUSD:1238.4}],
+        nominaRD:585367.36, cajaChicaRD:9719.35, viajesRD:136906,
+        totalVisitas:45, pctVisitas:40, pctLlamadas:35, pctEmails:25,
+        cantPresupuestos:22, montoPresupuestadoUSD:185000, cantAprobados:8, valorCerradoUSD:137637.76,
+        ingresosCobradosBrutoUSD:89195.77
+    });
+    // Febrero
+    Object.assign(datosMensuales[1], {
+        tasaCambio:62, ventasHPSBrutasUSD:94903.02, ventasImportBrutasUSD:11542.46,
+        ventasHPSNetasUSD:80426.29, ventasImportNetasUSD:9782.17,
+        assaAbloyUSD:20000, aduanasUSD:1628.46,
+        otrosSuplidores:[{id:nextId++,nombre:'APLIK INGENIERIA',valorUSD:827.01},{id:nextId++,nombre:'ENKOA SYSTEM',valorUSD:3764.74},{id:nextId++,nombre:'TALLERES GARCIA',valorUSD:156.21},{id:nextId++,nombre:'COMPRAS POR INTERNET',valorUSD:436.56}],
+        nominaRD:566641.03, cajaChicaRD:18052.18, viajesRD:257485.3,
+        totalVisitas:52, pctVisitas:35, pctLlamadas:40, pctEmails:25,
+        cantPresupuestos:28, montoPresupuestadoUSD:210000, cantAprobados:11, valorCerradoUSD:90208.46,
+        ingresosCobradosBrutoUSD:94138.23
+    });
+    // Marzo
+    Object.assign(datosMensuales[2], {
+        tasaCambio:61, ventasHPSBrutasUSD:469903.95, ventasImportBrutasUSD:48986.18,
+        ventasHPSNetasUSD:398223.69, ventasImportNetasUSD:41513.71,
+        assaAbloyUSD:15000, aduanasUSD:5474.99,
+        otrosSuplidores:[{id:nextId++,nombre:'APLIK INGENIERIA',valorUSD:1986.38},{id:nextId++,nombre:'SCAR SERVICE',valorUSD:1072.45},{id:nextId++,nombre:'CAMERSA',valorUSD:66.01},{id:nextId++,nombre:'ORBITA TECHNOLOGY',valorUSD:3940},{id:nextId++,nombre:'COMPRAS POR INTERNET',valorUSD:4300}],
+        nominaRD:520572.97, cajaChicaRD:18700.46, viajesRD:172161.58,
+        totalVisitas:38, pctVisitas:50, pctLlamadas:30, pctEmails:20,
+        cantPresupuestos:15, montoPresupuestadoUSD:520000, cantAprobados:6, valorCerradoUSD:439737.40,
+        ingresosCobradosBrutoUSD:176233.78
+    });
+    // Abril
+    Object.assign(datosMensuales[3], {
+        tasaCambio:61, ventasHPSBrutasUSD:226107.61, ventasImportBrutasUSD:17436.43,
+        ventasHPSNetasUSD:191955.64, ventasImportNetasUSD:14776.64,
+        assaAbloyUSD:0, aduanasUSD:0, otrosSuplidores:[],
+        nominaRD:0, cajaChicaRD:0, viajesRD:0,
+        totalVisitas:0, pctVisitas:0, pctLlamadas:0, pctEmails:0,
+        cantPresupuestos:128, montoPresupuestadoUSD:1162891.13, cantAprobados:42, valorCerradoUSD:243544.04,
+        ingresosCobradosBrutoUSD:368582.36
+    });
+    // Mayo (only income data)
+    Object.assign(datosMensuales[4], {
+        tasaCambio:61, ingresosCobradosBrutoUSD:79424.71
+    });
+    guardarLocalmente();
+}
 
-            // Mostrar dashboard
-            document.getElementById('loginOverlay').style.display = 'none';
-            document.getElementById('sidebar').style.display = 'flex';
-            document.getElementById('mainContent').style.display = 'block';
-            document.getElementById('loggedUserLabel').textContent = usuarioActual.nombre;
+function guardarLocalmente() {
+    localStorage.setItem('rentabilidad_integral_2026_v3', JSON.stringify(datosMensuales));
+}
 
-            // Inicializar datos y permisos
-            initDatos();
-            aplicarPermisos();
-            configurarNavegacion();
+// ===========================
+// CALC
+// ===========================
+function calcularMes(d) {
+    const t = d.tasaCambio || 61;
+    const ventasBrutasUSD = (d.ventasHPSBrutasUSD||0)+(d.ventasImportBrutasUSD||0);
+    const ventasNetasUSD = (d.ventasHPSNetasUSD||0)+(d.ventasImportNetasUSD||0);
+    const comprasAssaUSD = (d.assaAbloyUSD||0)+(d.aduanasUSD||0);
+    const otrosUSD = (d.otrosSuplidores||[]).reduce((s,x) => s+(x.valorUSD||0), 0);
+    const totalComprasUSD = comprasAssaUSD + otrosUSD;
+    const variacionInvUSD = (d.invInicialUSD||0)-(d.invFinalUSD||0);
+    const totalCostosUSD = totalComprasUSD + variacionInvUSD;
+    const margenBrutoUSD = ventasNetasUSD - totalCostosUSD;
+    const margenBrutoPct = ventasNetasUSD > 0 ? margenBrutoUSD/ventasNetasUSD*100 : 0;
+    const gastosFijosUSD = (d.combustibleUSD||0)+(d.interesesUSD||0)+(d.telefonosUSD||0)+(d.electricidadUSD||0)+(d.depreciacionUSD||0)+(d.segurosGenUSD||0);
+    const gastosFijosRD = (d.nominaRD||0)+(d.cajaChicaRD||0)+(d.eventosRD||0)+(d.correosRD||0)+(d.seguroGuaguaRD||0)+(d.combAlejandroRD||0)+(d.viajesRD||0);
+    const gastosFijosUSDFromRD = t > 0 ? gastosFijosRD/t : 0;
+    const totalGastosUSD = gastosFijosUSD + gastosFijosUSDFromRD;
+    const ebitUSD = margenBrutoUSD - totalGastosUSD;
+    const isrUSD = ebitUSD > 0 ? ebitUSD*0.27 : 0;
+    const netoUSD = ebitUSD - isrUSD;
+    const margenNetoPct = ventasNetasUSD > 0 ? netoUSD/ventasNetasUSD*100 : 0;
+    // Cash
+    const cobradoBruto = d.ingresosCobradosBrutoUSD || 0;
+    const cobradoNeto = cobradoBruto / 1.18;
+    const margenBrutoCaja = cobradoNeto - totalCostosUSD;
+    const ebitCaja = margenBrutoCaja - totalGastosUSD;
+    const isrCaja = ebitCaja > 0 ? ebitCaja*0.27 : 0;
+    const netoCaja = ebitCaja - isrCaja;
+    // KPIs comerciales
+    const totalVisitas = d.totalVisitas||0;
+    const cantPresupuestos = d.cantPresupuestos||0;
+    const cantAprobados = d.cantAprobados||0;
+    const montoPresupuestadoUSD = d.montoPresupuestadoUSD||0;
+    const valorCerradoUSD = d.valorCerradoUSD||0;
+    const tasaConversionVisitas = totalVisitas > 0 ? cantPresupuestos/totalVisitas*100 : 0;
+    const tasaAprobacion = cantPresupuestos > 0 ? cantAprobados/cantPresupuestos*100 : 0;
+    const tasaCierreValor = montoPresupuestadoUSD > 0 ? valorCerradoUSD/montoPresupuestadoUSD*100 : 0;
+    return { ventasBrutasUSD, ventasNetasUSD, comprasAssaUSD, otrosUSD, totalComprasUSD, variacionInvUSD, totalCostosUSD, margenBrutoUSD, margenBrutoPct, gastosFijosUSD, gastosFijosRD, gastosFijosUSDFromRD, totalGastosUSD, ebitUSD, isrUSD, netoUSD, margenNetoPct, tasaCambio:t, totalVisitas, cantPresupuestos, cantAprobados, montoPresupuestadoUSD, valorCerradoUSD, tasaConversionVisitas, tasaAprobacion, tasaCierreValor, cobradoBruto, cobradoNeto, margenBrutoCaja, ebitCaja, isrCaja, netoCaja };
+}
 
-            // Mostrar vista inicial según rol
-            if (usuarioActual.rol === 'admin') {
-                setActiveView('monthly', 0);
-            } else {
-                // Invitado: mostrar resumen del mes actual sin formulario
-                currentMonth = 0;
-                document.getElementById('view-monthly').classList.add('active');
-                const activeBtn = document.querySelector('.sidebar-nav button[data-view="monthly"][data-month="0"]');
-                if (activeBtn) activeBtn.classList.add('active');
-                cargarFormularioMes(currentMonth); // Carga los datos en los inputs (aunque deshabilitados)
-                document.getElementById('resumenMensualCard').style.display = 'block';
-                calcularYMostrarResumen(); // Muestra el resumen detallado
-            }
-        };
+const fmt = (v,d=2) => v.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const fmtP = v => v.toFixed(1)+'%';
 
-        window.cerrarSesion = function() {
-            usuarioActual = null;
-            document.getElementById('loginOverlay').style.display = 'flex';
-            document.getElementById('sidebar').style.display = 'none';
-            document.getElementById('mainContent').style.display = 'none';
-            document.getElementById('loginUsername').value = '';
-            document.getElementById('loginPassword').value = '';
-            document.getElementById('loginError').textContent = '';
-            // Destruir gráficos
-            if (window._chartVentasAnual) window._chartVentasAnual.destroy();
-            if (window._chartKPIsComerciales) window._chartKPIsComerciales.destroy();
-            if (window._chartMargenesAnual) window._chartMargenesAnual.destroy();
-            if (window._chartPieVentas) window._chartPieVentas.destroy();
-            if (window._chartGastosCat) window._chartGastosCat.destroy();
-            if (window._chartBeneficioNeto) window._chartBeneficioNeto.destroy();
-            if (window._chartRatioGastos) window._chartRatioGastos.destroy();
-            if (chartVisitasTipo) chartVisitasTipo.destroy();
-            if (chartPresupVsAprob) chartPresupVsAprob.destroy();
-            if (chartMontoVsCerrado) chartMontoVsCerrado.destroy();
-        };
-
-        function aplicarPermisos() {
-            const esAdmin = usuarioActual && usuarioActual.rol === 'admin';
-            const formEdicion = document.getElementById('formEdicionMensual');
-            if (formEdicion) formEdicion.style.display = esAdmin ? 'block' : 'none';
-
-            document.querySelectorAll('#monthlyForm input').forEach(input => {
-                input.disabled = !esAdmin;
-            });
-
-            const btnGuardar = document.getElementById('btnGuardarMes');
-            const btnCargar = document.getElementById('btnCargarMes');
-            const btnVerResumen = document.getElementById('btnVerResumen');
-            const btnAgregarSupl = document.getElementById('btnAgregarSuplidor');
-            if (btnGuardar) btnGuardar.style.display = esAdmin ? 'inline-block' : 'none';
-            if (btnCargar) btnCargar.style.display = esAdmin ? 'inline-block' : 'none';
-            if (btnVerResumen) btnVerResumen.style.display = esAdmin ? 'inline-block' : 'none';
-            if (btnAgregarSupl) btnAgregarSupl.style.display = esAdmin ? 'inline-block' : 'none';
+// ===========================
+// NAVIGATION
+// ===========================
+function setActiveView(viewName, monthIndex=null) {
+    document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.sidebar-nav button').forEach(b => b.classList.remove('active'));
+    if (viewName === 'monthly' && monthIndex !== null) {
+        currentMonth = monthIndex;
+        document.getElementById('view-monthly').classList.add('active');
+        const btn = document.querySelector(`.sidebar-nav button[data-view="monthly"][data-month="${monthIndex}"]`);
+        if (btn) btn.classList.add('active');
+        cargarFormularioMes(currentMonth);
+        document.getElementById('resumenMensualCard').style.display = 'none';
+        if (!usuarioActual || usuarioActual.rol !== 'admin') {
+            document.getElementById('resumenMensualCard').style.display = 'block';
+            calcularYMostrarResumen();
         }
+    } else if (viewName === 'integral') {
+        document.getElementById('view-integral').classList.add('active');
+        document.querySelector('.sidebar-nav button[data-view="integral"]').classList.add('active');
+        renderIntegral();
+    } else if (viewName === 'annual') {
+        document.getElementById('view-annual').classList.add('active');
+        document.querySelector('.sidebar-nav button[data-view="annual"]').classList.add('active');
+        renderAnual();
+    } else if (viewName === 'dashboard') {
+        document.getElementById('view-dashboard').classList.add('active');
+        document.querySelector('.sidebar-nav button[data-view="dashboard"]').classList.add('active');
+        renderDashboard();
+    }
+}
 
-        function configurarNavegacion() {
-            document.querySelectorAll('.sidebar-nav button[data-view]').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const view = this.dataset.view;
-                    const month = this.dataset.month !== undefined ? parseInt(this.dataset.month) : null;
-                    setActiveView(view, month);
-                });
-            });
-        }
+function switchPerspective(name) {
+    document.querySelectorAll('.perspective-bar .p-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('#view-integral .sub-panel').forEach(p => p.classList.remove('active'));
+    document.querySelector(`.p-tab-${name === 'caja' ? 'caja' : name === 'dso' ? 'dso' : name === 'compare' ? 'compare' : 'devengado'}`).classList.add('active');
+    document.getElementById(`sp-${name}`).classList.add('active');
+}
 
-        // --- DATOS GLOBALES ---
-        const MESES_NOMBRES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre',
-            'Octubre', 'Noviembre', 'Diciembre'
-        ];
-        const STORAGE_KEY = 'rentabilidad_2026_data_v2';
-        let currentMonth = 0;
-        let datosMensuales = [];
-        let chartVisitasTipo = null;
-        let chartPresupVsAprob = null;
-        let chartMontoVsCerrado = null;
+// ===========================
+// MONTHLY FORM
+// ===========================
+function cargarFormularioMes(idx) {
+    const d = datosMensuales[idx];
+    document.getElementById('monthTitle').textContent = `📅 ${MESES[idx]} 2026`;
+    document.getElementById('exchangeBadge').textContent = `Tasa: RD$ ${d.tasaCambio}/US$`;
+    const fields = ['tasaCambio','ventasHPSBrutasUSD','ventasImportBrutasUSD','ventasHPSNetasUSD','ventasImportNetasUSD','assaAbloyUSD','aduanasUSD','invInicialUSD','invFinalUSD','nominaRD','cajaChicaRD','eventosRD','correosRD','seguroGuaguaRD','combustibleUSD','interesesUSD','combAlejandroRD','telefonosUSD','viajesRD','electricidadUSD','depreciacionUSD','segurosGenUSD','totalVisitas','pctVisitas','pctLlamadas','pctEmails','cantPresupuestos','montoPresupuestadoUSD','cantAprobados','valorCerradoUSD','ingresosCobradosBrutoUSD'];
+    fields.forEach(f => { const el = document.getElementById(f); if (el) el.value = d[f] || 0; });
+    renderizarSuplidoresForm(d.otrosSuplidores || []);
+    aplicarPermisos();
+}
 
-        function initDatos() {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                try {
-                    datosMensuales = JSON.parse(saved);
-                    if (!Array.isArray(datosMensuales) || datosMensuales.length !== 12) throw new Error();
-                } catch (e) {
-                    datosMensuales = crearEstructuraVacia();
-                }
-            } else {
-                datosMensuales = crearEstructuraVacia();
-                precargarDatosEjemplo();
-            }
-        }
+function renderizarSuplidoresForm(sup) {
+    const c = document.getElementById('otrosSuplidoresContainer');
+    c.innerHTML = '';
+    const ok = usuarioActual && usuarioActual.rol === 'admin';
+    sup.forEach(s => {
+        const div = document.createElement('div');
+        div.style.cssText = 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;';
+        div.innerHTML = `<input type="text" placeholder="Suplidor" value="${s.nombre||''}" onchange="actualizarSuplidor(${s.id},'nombre',this.value)" ${ok?'':'disabled'} style="flex:1;min-width:150px;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font);font-size:0.85rem;">
+        <input type="number" step="0.01" placeholder="USD" value="${s.valorUSD||0}" onchange="actualizarSuplidor(${s.id},'valorUSD',parseFloat(this.value)||0)" ${ok?'':'disabled'} style="width:120px;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font);font-size:0.85rem;">
+        ${ok?`<button class="btn btn-sm" style="background:var(--danger);color:#fff;padding:5px 9px;" onclick="eliminarSuplidor(${s.id})">✕</button>`:''}`;
+        c.appendChild(div);
+    });
+}
 
-        function crearEstructuraVacia() {
-            return Array.from({ length: 12 }, () => ({
-                tasaCambio: 61,
-                ventasHPSBrutasUSD: 0,
-                ventasImportBrutasUSD: 0,
-                ventasHPSNetasUSD: 0,
-                ventasImportNetasUSD: 0,
-                assaAbloyUSD: 0,
-                aduanasUSD: 0,
-                otrosSuplidores: [],
-                invInicialUSD: 0,
-                invFinalUSD: 0,
-                nominaRD: 0,
-                cajaChicaRD: 0,
-                eventosRD: 28450,
-                correosRD: 4091.25,
-                seguroGuaguaRD: 3683.71,
-                combustibleUSD: 270,
-                interesesUSD: 49.76,
-                combAlejandroRD: 10000,
-                telefonosUSD: 63.17,
-                viajesRD: 0,
-                electricidadUSD: 144.42,
-                depreciacionUSD: 72.17,
-                segurosGenUSD: 45.57,
-                totalVisitas: 0,
-                pctVisitas: 0,
-                pctLlamadas: 0,
-                pctEmails: 0,
-                cantPresupuestos: 0,
-                montoPresupuestadoUSD: 0,
-                cantAprobados: 0,
-                valorCerradoUSD: 0,
-            }));
-        }
+window.actualizarSuplidor = function(id, campo, valor) {
+    if(!usuarioActual||usuarioActual.rol!=='admin') return;
+    const suplidores = datosMensuales[currentMonth].otrosSuplidores;
+    const idx = suplidores.findIndex(s => s.id === id);
+    if (idx === -1) return;
+    suplidores[idx][campo] = valor;
+    guardarLocalmente();
+    guardarDatosRemotos();
+};
 
-        function precargarDatosEjemplo() {
-            datosMensuales[0] = {
-                ...datosMensuales[0],
-                tasaCambio: 63,
-                ventasHPSBrutasUSD: 79208.06,
-                ventasImportBrutasUSD: 83204.5,
-                ventasHPSNetasUSD: 67125.47,
-                ventasImportNetasUSD: 70512.29,
-                assaAbloyUSD: 0,
-                aduanasUSD: 2385.94,
-                otrosSuplidores: [
-                    { nombre: 'APLIK INGENIERIA', valorUSD: 56837.25 / 63 },
-                    { nombre: 'COMPRAS POR INTERNET', valorUSD: 1238.4 }
-                ],
-                nominaRD: 585367.36,
-                cajaChicaRD: 9719.35,
-                viajesRD: 136906,
-                totalVisitas: 45,
-                pctVisitas: 40,
-                pctLlamadas: 35,
-                pctEmails: 25,
-                cantPresupuestos: 22,
-                montoPresupuestadoUSD: 185000,
-                cantAprobados: 8,
-                valorCerradoUSD: 137637.76,
-            };
-            datosMensuales[1] = {
-                ...datosMensuales[1],
-                tasaCambio: 62,
-                ventasHPSBrutasUSD: 94903.02,
-                ventasImportBrutasUSD: 11542.46,
-                ventasHPSNetasUSD: 80426.29,
-                ventasImportNetasUSD: 9782.17,
-                assaAbloyUSD: 20000,
-                aduanasUSD: 1628.46,
-                otrosSuplidores: [
-                    { nombre: 'APLIK INGENIERIA', valorUSD: 51274.48 / 62 },
-                    { nombre: 'ENKOA SYSTEM', valorUSD: 3764.74 },
-                    { nombre: 'TALLERES GARCIA', valorUSD: 9685 / 62 },
-                    { nombre: 'COMPRAS POR INTERNET', valorUSD: 27066.97 / 62 }
-                ],
-                nominaRD: 566641.03,
-                cajaChicaRD: 18052.18,
-                viajesRD: 257485.3,
-                totalVisitas: 52,
-                pctVisitas: 35,
-                pctLlamadas: 40,
-                pctEmails: 25,
-                cantPresupuestos: 28,
-                montoPresupuestadoUSD: 210000,
-                cantAprobados: 11,
-                valorCerradoUSD: 90208.46,
-            };
-            datosMensuales[2] = {
-                ...datosMensuales[2],
-                tasaCambio: 61,
-                ventasHPSBrutasUSD: 469903.95,
-                ventasImportBrutasUSD: 48986.18,
-                ventasHPSNetasUSD: 398223.69,
-                ventasImportNetasUSD: 41513.71,
-                assaAbloyUSD: 15000,
-                aduanasUSD: 5474.99,
-                otrosSuplidores: [
-                    { nombre: 'APLIK INGENIERIA', valorUSD: 121169.11 / 61 },
-                    { nombre: 'SCAR SERVICE', valorUSD: 65419.2 / 61 },
-                    { nombre: 'CAMERSA', valorUSD: 4026.65 / 61 },
-                    { nombre: 'ORBITA TECHNOLOGY', valorUSD: 3940 },
-                    { nombre: 'COMPRAS POR INTERNET', valorUSD: 4300 }
-                ],
-                nominaRD: 520572.97,
-                cajaChicaRD: 18700.46,
-                viajesRD: 172161.58,
-                totalVisitas: 38,
-                pctVisitas: 50,
-                pctLlamadas: 30,
-                pctEmails: 20,
-                cantPresupuestos: 15,
-                montoPresupuestadoUSD: 520000,
-                cantAprobados: 6,
-                valorCerradoUSD: 439737.40,
-            };
-            guardarTodosLosDatos();
-        }
+window.eliminarSuplidor = async function(id) {
+    if(!usuarioActual||usuarioActual.rol!=='admin') return;
+    const suplidores = datosMensuales[currentMonth].otrosSuplidores;
+    const idx = suplidores.findIndex(s => s.id === id);
+    if (idx === -1) { mostrarToast('❌ Suplidor no encontrado'); return; }
+    suplidores.splice(idx, 1);
+    guardarLocalmente();
+    await guardarDatosRemotos();
+    renderizarSuplidoresForm(suplidores);
+    mostrarToast('🗑️ Suplidor eliminado');
+};
 
-        function guardarTodosLosDatos() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(datosMensuales));
-        }
+window.agregarSuplidor = function() {
+    if(!usuarioActual||usuarioActual.rol!=='admin') return;
+    datosMensuales[currentMonth].otrosSuplidores.push({id:nextId++, nombre:'', valorUSD:0});
+    guardarLocalmente();
+    guardarDatosRemotos();
+    renderizarSuplidoresForm(datosMensuales[currentMonth].otrosSuplidores);
+};
 
-        function calcularMes(data) {
-            const t = data.tasaCambio;
-            const ventasBrutasUSD = (data.ventasHPSBrutasUSD || 0) + (data.ventasImportBrutasUSD || 0);
-            const ventasNetasUSD = (data.ventasHPSNetasUSD || 0) + (data.ventasImportNetasUSD || 0);
-            const comprasAssaAduanasUSD = (data.assaAbloyUSD || 0) + (data.aduanasUSD || 0);
-            const otrosSuplidoresUSD = (data.otrosSuplidores || []).reduce((sum, s) => sum + (s.valorUSD || 0), 0);
-            const totalComprasUSD = comprasAssaAduanasUSD + otrosSuplidoresUSD;
-            const variacionInvUSD = (data.invInicialUSD || 0) - (data.invFinalUSD || 0);
-            const totalCostosUSD = totalComprasUSD + variacionInvUSD;
-            const margenBrutoUSD = ventasNetasUSD - totalCostosUSD;
-            const margenBrutoPct = ventasNetasUSD > 0 ? (margenBrutoUSD / ventasNetasUSD * 100) : 0;
-            const gastosFijosUSD = (data.combustibleUSD || 0) + (data.interesesUSD || 0) + (data.telefonosUSD || 0) +
-                (data.electricidadUSD || 0) + (data.depreciacionUSD || 0) + (data.segurosGenUSD || 0);
-            const gastosFijosRD = (data.nominaRD || 0) + (data.cajaChicaRD || 0) + (data.eventosRD || 0) + (data
-                .correosRD || 0) + (data.seguroGuaguaRD || 0) + (data.combAlejandroRD || 0) + (data.viajesRD || 0);
-            const gastosFijosUSDFromRD = t > 0 ? gastosFijosRD / t : 0;
-            const totalGastosUSD = gastosFijosUSD + gastosFijosUSDFromRD;
-            const beneficioAntesImpUSD = margenBrutoUSD - totalGastosUSD;
-            const isrUSD = beneficioAntesImpUSD > 0 ? beneficioAntesImpUSD * 0.27 : 0;
-            const netoUSD = beneficioAntesImpUSD - isrUSD;
-            const margenNetoPct = ventasNetasUSD > 0 ? (netoUSD / ventasNetasUSD * 100) : 0;
+window.guardarMes = async function() {
+    if(!usuarioActual||usuarioActual.rol!=='admin') { mostrarToast('Solo administradores.'); return; }
+    const d = datosMensuales[currentMonth];
+    const fields = ['tasaCambio','ventasHPSBrutasUSD','ventasImportBrutasUSD','ventasHPSNetasUSD','ventasImportNetasUSD','assaAbloyUSD','aduanasUSD','invInicialUSD','invFinalUSD','nominaRD','cajaChicaRD','eventosRD','correosRD','seguroGuaguaRD','combustibleUSD','interesesUSD','combAlejandroRD','telefonosUSD','viajesRD','electricidadUSD','depreciacionUSD','segurosGenUSD','ingresosCobradosBrutoUSD'];
+    fields.forEach(f => d[f] = parseFloat(document.getElementById(f).value)||0);
+    ['totalVisitas','cantPresupuestos','cantAprobados'].forEach(f => d[f] = parseInt(document.getElementById(f).value)||0);
+    ['pctVisitas','pctLlamadas','pctEmails','montoPresupuestadoUSD','valorCerradoUSD'].forEach(f => d[f] = parseFloat(document.getElementById(f).value)||0);
+    document.getElementById('exchangeBadge').textContent = `Tasa: RD$ ${d.tasaCambio}/US$`;
+    guardarLocalmente();
+    await guardarDatosRemotos();
+    mostrarToast(`✅ ${MESES[currentMonth]} guardado`);
+};
 
-            const totalVisitas = data.totalVisitas || 0;
-            const cantPresupuestos = data.cantPresupuestos || 0;
-            const cantAprobados = data.cantAprobados || 0;
-            const montoPresupuestadoUSD = data.montoPresupuestadoUSD || 0;
-            const valorCerradoUSD = data.valorCerradoUSD || 0;
-            const tasaConversionVisitas = totalVisitas > 0 ? (cantPresupuestos / totalVisitas * 100) : 0;
-            const tasaAprobacion = cantPresupuestos > 0 ? (cantAprobados / cantPresupuestos * 100) : 0;
-            const tasaCierreValor = montoPresupuestadoUSD > 0 ? (valorCerradoUSD / montoPresupuestadoUSD * 100) : 0;
+window.cargarDatosMes = function() { cargarFormularioMes(currentMonth); mostrarToast('🔄 Recargado'); };
 
-            return {
-                ventasBrutasUSD,
-                ventasNetasUSD,
-                comprasAssaAduanasUSD,
-                otrosSuplidoresUSD,
-                totalComprasUSD,
-                variacionInvUSD,
-                totalCostosUSD,
-                margenBrutoUSD,
-                margenBrutoPct,
-                gastosFijosUSD,
-                gastosFijosRD,
-                gastosFijosUSDFromRD,
-                totalGastosUSD,
-                beneficioAntesImpUSD,
-                isrUSD,
-                netoUSD,
-                margenNetoPct,
-                tasaCambio: t,
-                totalVisitas,
-                cantPresupuestos,
-                cantAprobados,
-                montoPresupuestadoUSD,
-                valorCerradoUSD,
-                tasaConversionVisitas,
-                tasaAprobacion,
-                tasaCierreValor,
-            };
-        }
+// ===========================
+// MONTHLY SUMMARY
+// ===========================
+window.calcularYMostrarResumen = function() {
+    if (usuarioActual && usuarioActual.rol === 'admin') guardarMes();
+    const d = datosMensuales[currentMonth];
+    const c = calcularMes(d);
+    const t = d.tasaCambio;
+    const card = document.getElementById('resumenMensualCard');
+    card.style.display = 'block';
+    const cobPct = c.ventasBrutasUSD > 0 ? c.cobradoBruto/c.ventasBrutasUSD*100 : 0;
+    const desfase = c.ventasBrutasUSD - c.cobradoBruto;
 
-        function setActiveView(viewName, monthIndex = null) {
-            document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.sidebar-nav button').forEach(b => b.classList.remove('active'));
+    document.getElementById('resumenMensualContent').innerHTML = `
+        <div class="kpi-grid" style="margin:12px 0;">
+            <div class="kpi-card"><div class="kpi-label">Ventas Netas (Facturado)</div><div class="kpi-value">$${fmt(c.ventasNetasUSD)}</div></div>
+            <div class="kpi-card cash"><div class="kpi-label">Cobrado Bruto</div><div class="kpi-value">$${fmt(c.cobradoBruto)}</div><div class="kpi-sub">Cobranza: ${fmtP(cobPct)}</div></div>
+            <div class="kpi-card accent"><div class="kpi-label">Margen Bruto</div><div class="kpi-value">${fmtP(c.margenBrutoPct)}</div></div>
+            <div class="kpi-card ${c.netoUSD>=0?'success':'danger'}"><div class="kpi-label">Neto Devengado</div><div class="kpi-value">$${fmt(c.netoUSD)}</div><div class="kpi-sub">${fmtP(c.margenNetoPct)}</div></div>
+            <div class="kpi-card ${c.netoCaja>=0?'success':'danger'}"><div class="kpi-label">Neto Caja</div><div class="kpi-value">$${fmt(c.netoCaja)}</div></div>
+            <div class="kpi-card ${desfase>0?'danger':'success'}"><div class="kpi-label">Desfase Caja</div><div class="kpi-value">$${fmt(Math.abs(desfase))}</div><div class="kpi-sub">${desfase>0?'Pendiente de cobro':'Cobro excedente'}</div></div>
+        </div>
+        <div class="table-wrapper"><table><thead><tr><th>Concepto</th><th>RD$</th><th>US$</th></tr></thead><tbody>
+            <tr><td>Ventas HPS Brutas</td><td>${fmt(d.ventasHPSBrutasUSD*t)}</td><td>${fmt(d.ventasHPSBrutasUSD)}</td></tr>
+            <tr><td>Ventas Import Brutas</td><td>${fmt(d.ventasImportBrutasUSD*t)}</td><td>${fmt(d.ventasImportBrutasUSD)}</td></tr>
+            <tr><td><strong>Total Ventas Brutas</strong></td><td><strong>${fmt(c.ventasBrutasUSD*t)}</strong></td><td><strong>${fmt(c.ventasBrutasUSD)}</strong></td></tr>
+            <tr><td><strong>Total Ventas Netas</strong></td><td><strong>${fmt(c.ventasNetasUSD*t)}</strong></td><td><strong>${fmt(c.ventasNetasUSD)}</strong></td></tr>
+            <tr class="section-divider"><td colspan="3">💵 Ingresos Cobrados</td></tr>
+            <tr><td><strong>Total Cobrado (Bruto)</strong></td><td><strong>${fmt(c.cobradoBruto*t)}</strong></td><td><strong>${fmt(c.cobradoBruto)}</strong></td></tr>
+            <tr><td>% Cobranza s/Facturado</td><td colspan="2"><strong>${fmtP(cobPct)}</strong></td></tr>
+            <tr class="section-divider"><td colspan="3">📦 Costos Suplidores</td></tr>
+            <tr><td>ASSA ABLOY + ADUANAS</td><td>${fmt(c.comprasAssaUSD*t)}</td><td>${fmt(c.comprasAssaUSD)}</td></tr>
+            ${(d.otrosSuplidores||[]).map(s=>`<tr><td>${s.nombre||'Suplidor'}</td><td>${fmt((s.valorUSD||0)*t)}</td><td>${fmt(s.valorUSD||0)}</td></tr>`).join('')}
+            <tr><td><strong>Total Costos</strong></td><td><strong>${fmt(c.totalCostosUSD*t)}</strong></td><td><strong>${fmt(c.totalCostosUSD)}</strong></td></tr>
+            <tr class="section-divider"><td colspan="3">💼 Gastos Administrativos</td></tr>
+            <tr><td>Nómina Global</td><td>${fmt(d.nominaRD)}</td><td>${fmt(d.nominaRD/t)}</td></tr>
+            <tr><td>Caja Chica</td><td>${fmt(d.cajaChicaRD)}</td><td>${fmt(d.cajaChicaRD/t)}</td></tr>
+            <tr><td>Gastos de Viajes</td><td>${fmt(d.viajesRD)}</td><td>${fmt(d.viajesRD/t)}</td></tr>
+            <tr><td><strong>Total Gastos</strong></td><td><strong>${fmt(c.totalGastosUSD*t)}</strong></td><td><strong>${fmt(c.totalGastosUSD)}</strong></td></tr>
+            <tr class="highlight-row"><td><strong>Neto Devengado (US$)</strong></td><td colspan="2"><strong>$${fmt(c.netoUSD)} (${fmtP(c.margenNetoPct)})</strong></td></tr>
+            <tr class="highlight-row" style="background:#e0f2f1"><td><strong>Neto Caja (US$)</strong></td><td colspan="2"><strong>$${fmt(c.netoCaja)}</strong></td></tr>
+        </tbody></table></div>`;
+    card.scrollIntoView({behavior:'smooth'});
+};
 
-            if (viewName === 'monthly' && monthIndex !== null) {
-                currentMonth = monthIndex;
-                document.getElementById('view-monthly').classList.add('active');
-                const monthBtn = document.querySelector(`.sidebar-nav button[data-view="monthly"][data-month="${monthIndex}"]`);
-                if (monthBtn) monthBtn.classList.add('active');
-                cargarFormularioMes(currentMonth);
-                document.getElementById('resumenMensualCard').style.display = 'none';
-                if (chartVisitasTipo) chartVisitasTipo.destroy();
-                if (chartPresupVsAprob) chartPresupVsAprob.destroy();
-                if (chartMontoVsCerrado) chartMontoVsCerrado.destroy();
-                if (!usuarioActual || usuarioActual.rol !== 'admin') {
-                    document.getElementById('resumenMensualCard').style.display = 'block';
-                    calcularYMostrarResumen();
-                }
-            } else if (viewName === 'annual') {
-                document.getElementById('view-annual').classList.add('active');
-                const btn = document.querySelector('.sidebar-nav button[data-view="annual"]');
-                if (btn) btn.classList.add('active');
-                renderizarVistaAnual();
-            } else if (viewName === 'dashboard') {
-                document.getElementById('view-dashboard').classList.add('active');
-                const btn = document.querySelector('.sidebar-nav button[data-view="dashboard"]');
-                if (btn) btn.classList.add('active');
-                renderizarDashboard();
-            }
-        }
+// ===========================
+// INTEGRAL VIEW (3 PERSPECTIVES)
+// ===========================
+function renderIntegral() {
+    renderDevengado();
+    renderCaja();
+    renderDSO();
+    renderCompare();
+}
 
-        function cargarFormularioMes(mIndex) {
-            const data = datosMensuales[mIndex];
-            document.getElementById('monthTitle').textContent = `📅 ${MESES_NOMBRES[mIndex]} 2026`;
-            document.getElementById('exchangeBadge').textContent = `Tasa: RD$ ${data.tasaCambio.toFixed(2)}/US$`;
-            document.getElementById('tasaCambio').value = data.tasaCambio;
-            document.getElementById('ventasHPSBrutasUSD').value = data.ventasHPSBrutasUSD;
-            document.getElementById('ventasImportBrutasUSD').value = data.ventasImportBrutasUSD;
-            document.getElementById('ventasHPSNetasUSD').value = data.ventasHPSNetasUSD;
-            document.getElementById('ventasImportNetasUSD').value = data.ventasImportNetasUSD;
-            document.getElementById('assaAbloyUSD').value = data.assaAbloyUSD;
-            document.getElementById('aduanasUSD').value = data.aduanasUSD;
-            document.getElementById('invInicialUSD').value = data.invInicialUSD;
-            document.getElementById('invFinalUSD').value = data.invFinalUSD;
-            document.getElementById('nominaRD').value = data.nominaRD;
-            document.getElementById('cajaChicaRD').value = data.cajaChicaRD;
-            document.getElementById('eventosRD').value = data.eventosRD;
-            document.getElementById('correosRD').value = data.correosRD;
-            document.getElementById('seguroGuaguaRD').value = data.seguroGuaguaRD;
-            document.getElementById('combustibleUSD').value = data.combustibleUSD;
-            document.getElementById('interesesUSD').value = data.interesesUSD;
-            document.getElementById('combAlejandroRD').value = data.combAlejandroRD;
-            document.getElementById('telefonosUSD').value = data.telefonosUSD;
-            document.getElementById('viajesRD').value = data.viajesRD;
-            document.getElementById('electricidadUSD').value = data.electricidadUSD;
-            document.getElementById('depreciacionUSD').value = data.depreciacionUSD;
-            document.getElementById('segurosGenUSD').value = data.segurosGenUSD;
-            document.getElementById('totalVisitas').value = data.totalVisitas || 0;
-            document.getElementById('pctVisitas').value = data.pctVisitas || 0;
-            document.getElementById('pctLlamadas').value = data.pctLlamadas || 0;
-            document.getElementById('pctEmails').value = data.pctEmails || 0;
-            document.getElementById('cantPresupuestos').value = data.cantPresupuestos || 0;
-            document.getElementById('montoPresupuestadoUSD').value = data.montoPresupuestadoUSD || 0;
-            document.getElementById('cantAprobados').value = data.cantAprobados || 0;
-            document.getElementById('valorCerradoUSD').value = data.valorCerradoUSD || 0;
-            renderizarSuplidoresForm(data.otrosSuplidores || []);
-            aplicarPermisos();
-        }
+function getMesesActivos() {
+    return datosMensuales.map((d,i) => ({...calcularMes(d), idx:i, mes:MESES_SHORT[i], data:d}))
+        .filter(m => m.ventasBrutasUSD > 0 || m.cobradoBruto > 0);
+}
 
-        function renderizarSuplidoresForm(suplidores) {
-            const container = document.getElementById('otrosSuplidoresContainer');
-            container.innerHTML = '';
-            const esAdmin = usuarioActual && usuarioActual.rol === 'admin';
-            suplidores.forEach((s, idx) => {
-                const div = document.createElement('div');
-                div.style.cssText = 'display:flex;gap:10px;align-items:center;flex-wrap:wrap;';
-                div.innerHTML = `
-                    <input type="text" placeholder="Nombre suplidor" value="${s.nombre||''}" 
-                           onchange="actualizarSuplidor(${idx},'nombre',this.value)" ${esAdmin?'':'disabled'} style="flex:1;min-width:160px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font);">
-                    <input type="number" step="0.01" placeholder="USD" value="${s.valorUSD||0}" 
-                           onchange="actualizarSuplidor(${idx},'valorUSD',parseFloat(this.value)||0)" ${esAdmin?'':'disabled'} style="width:130px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font);">
-                    ${esAdmin ? `<button class="btn btn-sm" style="background:#c62828;color:#fff;padding:6px 10px;" onclick="eliminarSuplidor(${idx})">✕</button>` : ''}
-                `;
-                container.appendChild(div);
-            });
-        }
+function renderDevengado() {
+    const ms = getMesesActivos();
+    const tot = ms.reduce((a,m) => { a.vn+=m.ventasNetasUSD; a.mb+=m.margenBrutoUSD; a.g+=m.totalGastosUSD; a.ebit+=m.ebitUSD; a.isr+=m.isrUSD; a.n+=m.netoUSD; a.tc+=m.totalCostosUSD; return a; }, {vn:0,mb:0,g:0,ebit:0,isr:0,n:0,tc:0});
+    const mbp = tot.vn>0?tot.mb/tot.vn*100:0;
+    const mnp = tot.vn>0?tot.n/tot.vn*100:0;
 
-        window.actualizarSuplidor = function(idx, campo, valor) {
-            if (!usuarioActual || usuarioActual.rol !== 'admin') return;
-            if (!datosMensuales[currentMonth].otrosSuplidores) datosMensuales[currentMonth].otrosSuplidores = [];
-            if (datosMensuales[currentMonth].otrosSuplidores[idx] === undefined)
-                datosMensuales[currentMonth].otrosSuplidores[idx] = {};
-            datosMensuales[currentMonth].otrosSuplidores[idx][campo] = valor;
-            guardarTodosLosDatos();
-        };
-        window.eliminarSuplidor = function(idx) {
-            if (!usuarioActual || usuarioActual.rol !== 'admin') return;
-            datosMensuales[currentMonth].otrosSuplidores.splice(idx, 1);
-            guardarTodosLosDatos();
-            renderizarSuplidoresForm(datosMensuales[currentMonth].otrosSuplidores || []);
-            mostrarToast('Suplidor eliminado');
-        };
-        window.agregarSuplidor = function() {
-            if (!usuarioActual || usuarioActual.rol !== 'admin') {
-                mostrarToast('Acceso denegado: solo administradores pueden editar.');
-                return;
-            }
-            if (!datosMensuales[currentMonth].otrosSuplidores) datosMensuales[currentMonth].otrosSuplidores = [];
-            datosMensuales[currentMonth].otrosSuplidores.push({ nombre: '', valorUSD: 0 });
-            guardarTodosLosDatos();
-            renderizarSuplidoresForm(datosMensuales[currentMonth].otrosSuplidores || []);
-            mostrarToast('Suplidor agregado');
-        };
+    document.getElementById('sp-devengado').innerHTML = `
+        <div class="alert-box info">📄 <strong>Base Devengado:</strong> Los ingresos se registran al facturar, independientemente de cuándo se cobre. Es la base contable y fiscal.</div>
+        <div class="kpi-grid">
+            <div class="kpi-card"><div class="kpi-label">Ventas Netas Acum.</div><div class="kpi-value">$${fmt(tot.vn)}</div></div>
+            <div class="kpi-card accent"><div class="kpi-label">Margen Bruto</div><div class="kpi-value">${fmtP(mbp)}</div><div class="kpi-sub">$${fmt(tot.mb)}</div></div>
+            <div class="kpi-card"><div class="kpi-label">Gastos Totales</div><div class="kpi-value">$${fmt(tot.g)}</div></div>
+            <div class="kpi-card ${tot.n>=0?'success':'danger'}"><div class="kpi-label">Utilidad Neta</div><div class="kpi-value">$${fmt(tot.n)}</div><div class="kpi-sub">Margen: ${fmtP(mnp)}</div></div>
+        </div>
+        <div class="charts-row">
+            <div class="chart-card"><h3>Utilidad Neta Devengada Mensual</h3><canvas id="chDevNeto"></canvas></div>
+            <div class="chart-card"><h3>Márgenes Mensuales (%)</h3><canvas id="chDevMarg"></canvas></div>
+        </div>
+        <div class="form-card"><h3>📋 Estado de Resultados — Base Devengado</h3>
+            <div class="table-wrapper"><table><thead><tr><th>Concepto</th>${ms.map(m=>`<th>${m.mes}</th>`).join('')}<th>Total</th></tr></thead><tbody>
+                <tr><td>Ventas Netas</td>${ms.map(m=>`<td>${fmt(m.ventasNetasUSD)}</td>`).join('')}<td><strong>${fmt(tot.vn)}</strong></td></tr>
+                <tr><td>(-) Costos</td>${ms.map(m=>`<td>${fmt(m.totalCostosUSD)}</td>`).join('')}<td><strong>${fmt(tot.tc)}</strong></td></tr>
+                <tr><td><strong>Margen Bruto</strong></td>${ms.map(m=>`<td>${fmt(m.margenBrutoUSD)}</td>`).join('')}<td><strong>${fmt(tot.mb)}</strong></td></tr>
+                <tr><td>(-) Gastos</td>${ms.map(m=>`<td>${fmt(m.totalGastosUSD)}</td>`).join('')}<td><strong>${fmt(tot.g)}</strong></td></tr>
+                <tr><td>EBIT</td>${ms.map(m=>`<td>${fmt(m.ebitUSD)}</td>`).join('')}<td><strong>${fmt(tot.ebit)}</strong></td></tr>
+                <tr><td>(-) ISR 27%</td>${ms.map(m=>`<td>${fmt(m.isrUSD)}</td>`).join('')}<td><strong>${fmt(tot.isr)}</strong></td></tr>
+                <tr class="highlight-row"><td><strong>Utilidad Neta</strong></td>${ms.map(m=>`<td><strong>${fmt(m.netoUSD)}</strong></td>`).join('')}<td><strong>${fmt(tot.n)}</strong></td></tr>
+                <tr><td>Margen Neto %</td>${ms.map(m=>`<td>${fmtP(m.margenNetoPct)}</td>`).join('')}<td><strong>${fmtP(mnp)}</strong></td></tr>
+            </tbody></table></div>
+        </div>`;
 
-        window.guardarMes = function() {
-            if (!usuarioActual || usuarioActual.rol !== 'admin') {
-                mostrarToast('Acceso denegado: solo administradores pueden guardar cambios.');
-                return;
-            }
-            const data = datosMensuales[currentMonth];
-            data.tasaCambio = parseFloat(document.getElementById('tasaCambio').value) || 61;
-            data.ventasHPSBrutasUSD = parseFloat(document.getElementById('ventasHPSBrutasUSD').value) || 0;
-            data.ventasImportBrutasUSD = parseFloat(document.getElementById('ventasImportBrutasUSD').value) || 0;
-            data.ventasHPSNetasUSD = parseFloat(document.getElementById('ventasHPSNetasUSD').value) || 0;
-            data.ventasImportNetasUSD = parseFloat(document.getElementById('ventasImportNetasUSD').value) || 0;
-            data.assaAbloyUSD = parseFloat(document.getElementById('assaAbloyUSD').value) || 0;
-            data.aduanasUSD = parseFloat(document.getElementById('aduanasUSD').value) || 0;
-            data.invInicialUSD = parseFloat(document.getElementById('invInicialUSD').value) || 0;
-            data.invFinalUSD = parseFloat(document.getElementById('invFinalUSD').value) || 0;
-            data.nominaRD = parseFloat(document.getElementById('nominaRD').value) || 0;
-            data.cajaChicaRD = parseFloat(document.getElementById('cajaChicaRD').value) || 0;
-            data.eventosRD = parseFloat(document.getElementById('eventosRD').value) || 0;
-            data.correosRD = parseFloat(document.getElementById('correosRD').value) || 0;
-            data.seguroGuaguaRD = parseFloat(document.getElementById('seguroGuaguaRD').value) || 0;
-            data.combustibleUSD = parseFloat(document.getElementById('combustibleUSD').value) || 0;
-            data.interesesUSD = parseFloat(document.getElementById('interesesUSD').value) || 0;
-            data.combAlejandroRD = parseFloat(document.getElementById('combAlejandroRD').value) || 0;
-            data.telefonosUSD = parseFloat(document.getElementById('telefonosUSD').value) || 0;
-            data.viajesRD = parseFloat(document.getElementById('viajesRD').value) || 0;
-            data.electricidadUSD = parseFloat(document.getElementById('electricidadUSD').value) || 0;
-            data.depreciacionUSD = parseFloat(document.getElementById('depreciacionUSD').value) || 0;
-            data.segurosGenUSD = parseFloat(document.getElementById('segurosGenUSD').value) || 0;
-            data.totalVisitas = parseInt(document.getElementById('totalVisitas').value) || 0;
-            data.pctVisitas = parseFloat(document.getElementById('pctVisitas').value) || 0;
-            data.pctLlamadas = parseFloat(document.getElementById('pctLlamadas').value) || 0;
-            data.pctEmails = parseFloat(document.getElementById('pctEmails').value) || 0;
-            data.cantPresupuestos = parseInt(document.getElementById('cantPresupuestos').value) || 0;
-            data.montoPresupuestadoUSD = parseFloat(document.getElementById('montoPresupuestadoUSD').value) || 0;
-            data.cantAprobados = parseInt(document.getElementById('cantAprobados').value) || 0;
-            data.valorCerradoUSD = parseFloat(document.getElementById('valorCerradoUSD').value) || 0;
-            document.getElementById('exchangeBadge').textContent = `Tasa: RD$ ${data.tasaCambio.toFixed(2)}/US$`;
-            guardarTodosLosDatos();
-            mostrarToast(`✅ ${MESES_NOMBRES[currentMonth]} 2026 guardado correctamente`);
-        };
+    setTimeout(() => {
+        destroyChart('chDevNeto');
+        _charts.chDevNeto = new Chart(document.getElementById('chDevNeto'), {type:'bar',data:{labels:ms.map(m=>m.mes),datasets:[{data:ms.map(m=>m.netoUSD),backgroundColor:ms.map(m=>m.netoUSD>=0?'#2e7d32':'#c62828'),borderRadius:6}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'$'+v.toLocaleString()}}}}});
+        destroyChart('chDevMarg');
+        _charts.chDevMarg = new Chart(document.getElementById('chDevMarg'), {type:'line',data:{labels:ms.map(m=>m.mes),datasets:[{label:'Margen Bruto %',data:ms.map(m=>m.margenBrutoPct),borderColor:'#2e7d32',backgroundColor:'rgba(46,125,50,0.1)',fill:true,tension:0.3,pointRadius:5},{label:'Margen Neto %',data:ms.map(m=>m.margenNetoPct),borderColor:'#e8873a',backgroundColor:'rgba(232,135,58,0.1)',fill:true,tension:0.3,pointRadius:5}]},options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{ticks:{callback:v=>v+'%'}}}}});
+    }, 50);
+}
 
-        window.cargarDatosMes = function() {
-            if (!usuarioActual || usuarioActual.rol !== 'admin') return;
-            cargarFormularioMes(currentMonth);
-            mostrarToast('🔄 Datos recargados');
-        };
+function renderCaja() {
+    const ms = getMesesActivos();
+    const tot = ms.reduce((a,m) => { a.cb+=m.cobradoBruto; a.cn+=m.cobradoNeto; a.tc+=m.totalCostosUSD; a.g+=m.totalGastosUSD; a.n+=m.netoCaja; return a; }, {cb:0,cn:0,tc:0,g:0,n:0});
+    const mbc = tot.cn>0?(tot.cn-tot.tc)/tot.cn*100:0;
+    const mnc = tot.cn>0?tot.n/tot.cn*100:0;
 
-        window.calcularYMostrarResumen = function() {
-            // Si es admin, forzamos guardar antes de mostrar
-            if (usuarioActual && usuarioActual.rol === 'admin') {
-                guardarMes();
-            }
-            // Verificar que los datos existen
-            if (!datosMensuales || !datosMensuales[currentMonth]) {
-                console.error('Error: datos no disponibles');
-                return;
-            }
-            const data = datosMensuales[currentMonth];
-            const calc = calcularMes(data);
-            const t = data.tasaCambio;
-            const card = document.getElementById('resumenMensualCard');
-            card.style.display = 'block';
+    document.getElementById('sp-caja').innerHTML = `
+        <div class="alert-box success">💵 <strong>Base Flujo de Caja:</strong> Los ingresos se registran cuando el cliente paga. Refleja la liquidez real disponible.</div>
+        <div class="kpi-grid">
+            <div class="kpi-card cash"><div class="kpi-label">Total Cobrado Bruto</div><div class="kpi-value">$${fmt(tot.cb)}</div></div>
+            <div class="kpi-card cash"><div class="kpi-label">Cobrado Neto (s/ITBIS)</div><div class="kpi-value">$${fmt(tot.cn)}</div></div>
+            <div class="kpi-card accent"><div class="kpi-label">Margen Bruto Caja</div><div class="kpi-value">${fmtP(mbc)}</div></div>
+            <div class="kpi-card ${tot.n>=0?'success':'danger'}"><div class="kpi-label">Utilidad Neta Caja</div><div class="kpi-value">$${fmt(tot.n)}</div><div class="kpi-sub">Margen: ${fmtP(mnc)}</div></div>
+        </div>
+        <div class="charts-row">
+            <div class="chart-card"><h3>Cobrado vs Facturado (Bruto USD)</h3><canvas id="chCajaVsFact"></canvas></div>
+            <div class="chart-card"><h3>Utilidad Neta de Caja</h3><canvas id="chCajaNeto"></canvas></div>
+        </div>
+        <div class="form-card"><h3>📋 Estado de Resultados — Base Caja</h3>
+            <div class="table-wrapper"><table><thead><tr><th>Concepto</th>${ms.map(m=>`<th>${m.mes}</th>`).join('')}<th>Total</th></tr></thead><tbody>
+                <tr><td>Cobrado Bruto</td>${ms.map(m=>`<td>${fmt(m.cobradoBruto)}</td>`).join('')}<td><strong>${fmt(tot.cb)}</strong></td></tr>
+                <tr><td>Cobrado Neto (s/ITBIS)</td>${ms.map(m=>`<td>${fmt(m.cobradoNeto)}</td>`).join('')}<td><strong>${fmt(tot.cn)}</strong></td></tr>
+                <tr><td>(-) Costos</td>${ms.map(m=>`<td>${fmt(m.totalCostosUSD)}</td>`).join('')}<td><strong>${fmt(tot.tc)}</strong></td></tr>
+                <tr><td><strong>Margen Bruto Caja</strong></td>${ms.map(m=>`<td>${fmt(m.margenBrutoCaja)}</td>`).join('')}<td><strong>${fmt(tot.cn-tot.tc)}</strong></td></tr>
+                <tr><td>(-) Gastos</td>${ms.map(m=>`<td>${fmt(m.totalGastosUSD)}</td>`).join('')}<td><strong>${fmt(tot.g)}</strong></td></tr>
+                <tr><td>(-) ISR 27%</td>${ms.map(m=>`<td>${fmt(m.isrCaja)}</td>`).join('')}<td><strong>${fmt(ms.reduce((s,m)=>s+m.isrCaja,0))}</strong></td></tr>
+                <tr class="highlight-row" style="background:#e0f2f1"><td><strong>Utilidad Neta Caja</strong></td>${ms.map(m=>`<td><strong>${fmt(m.netoCaja)}</strong></td>`).join('')}<td><strong>${fmt(tot.n)}</strong></td></tr>
+            </tbody></table></div>
+        </div>`;
 
-            const visitasData = {
-                presencial: (data.totalVisitas || 0) * (data.pctVisitas || 0) / 100,
-                llamadas: (data.totalVisitas || 0) * (data.pctLlamadas || 0) / 100,
-                emails: (data.totalVisitas || 0) * (data.pctEmails || 0) / 100
-            };
-            const presupAprob = data.cantAprobados || 0;
-            const presupPend = Math.max(0, (data.cantPresupuestos || 0) - presupAprob);
-            const valorCerrado = data.valorCerradoUSD || 0;
-            const valorPend = Math.max(0, (data.montoPresupuestadoUSD || 0) - valorCerrado);
+    setTimeout(() => {
+        destroyChart('chCajaVsFact');
+        _charts.chCajaVsFact = new Chart(document.getElementById('chCajaVsFact'), {type:'bar',data:{labels:ms.map(m=>m.mes),datasets:[{label:'Facturado',data:ms.map(m=>m.ventasBrutasUSD),backgroundColor:'#1a3c5e',borderRadius:6},{label:'Cobrado',data:ms.map(m=>m.cobradoBruto),backgroundColor:'#00897b',borderRadius:6}]},options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{ticks:{callback:v=>'$'+v.toLocaleString()}}}}});
+        destroyChart('chCajaNeto');
+        _charts.chCajaNeto = new Chart(document.getElementById('chCajaNeto'), {type:'bar',data:{labels:ms.map(m=>m.mes),datasets:[{data:ms.map(m=>m.netoCaja),backgroundColor:ms.map(m=>m.netoCaja>=0?'#00897b':'#c62828'),borderRadius:6}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'$'+v.toLocaleString()}}}}});
+    }, 50);
+}
 
-            const contenido = `
-                <div class="kpi-grid" style="margin-bottom:16px;">
-                    <div class="kpi-card"><div class="kpi-label">Ventas Netas</div><div class="kpi-value">$${calc.ventasNetasUSD.toLocaleString('en-US',{minimumFractionDigits:2})}</div><div class="kpi-sub">RD$ ${(calc.ventasNetasUSD*t).toLocaleString('en-US',{minimumFractionDigits:2})}</div></div>
-                    <div class="kpi-card"><div class="kpi-label">Total Costos</div><div class="kpi-value">$${calc.totalCostosUSD.toLocaleString('en-US',{minimumFractionDigits:2})}</div></div>
-                    <div class="kpi-card accent"><div class="kpi-label">Margen Bruto</div><div class="kpi-value">$${calc.margenBrutoUSD.toLocaleString('en-US',{minimumFractionDigits:2})}</div><div class="kpi-sub">${calc.margenBrutoPct.toFixed(2)}%</div></div>
-                    <div class="kpi-card"><div class="kpi-label">Total Gastos</div><div class="kpi-value">$${calc.totalGastosUSD.toLocaleString('en-US',{minimumFractionDigits:2})}</div></div>
-                    <div class="kpi-card ${calc.netoUSD>=0?'success':'danger'}"><div class="kpi-label">Beneficio Neto</div><div class="kpi-value">$${calc.netoUSD.toLocaleString('en-US',{minimumFractionDigits:2})}</div><div class="kpi-sub">Margen Neto: ${calc.margenNetoPct.toFixed(2)}% | ISR: $${calc.isrUSD.toLocaleString('en-US',{minimumFractionDigits:2})}</div></div>
-                    <div class="kpi-card info"><div class="kpi-label">Tasa Conversión Visitas→Presup.</div><div class="kpi-value">${calc.tasaConversionVisitas.toFixed(1)}%</div><div class="kpi-sub">${calc.totalVisitas} visitas → ${calc.cantPresupuestos} presup.</div></div>
-                    <div class="kpi-card info"><div class="kpi-label">Tasa Aprobación Presupuestos</div><div class="kpi-value">${calc.tasaAprobacion.toFixed(1)}%</div><div class="kpi-sub">${calc.cantPresupuestos} presup. → ${calc.cantAprobados} aprobados</div></div>
-                    <div class="kpi-card info"><div class="kpi-label">Tasa Cierre en Valor</div><div class="kpi-value">${calc.tasaCierreValor.toFixed(1)}%</div><div class="kpi-sub">$${calc.montoPresupuestadoUSD.toLocaleString()} → $${calc.valorCerradoUSD.toLocaleString()}</div></div>
-                </div>
-                <div class="table-wrapper">
-                    <table>
-                        <thead><tr><th>Concepto</th><th>RD$</th><th>US$</th></tr></thead>
-                        <tbody>
-                            <tr><td>Ventas HPS Brutas</td><td>${(data.ventasHPSBrutasUSD*t).toLocaleString('en-US',{minimumFractionDigits:2})}</td><td>${data.ventasHPSBrutasUSD.toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>
-                            <tr><td>Ventas Import Brutas</td><td>${(data.ventasImportBrutasUSD*t).toLocaleString('en-US',{minimumFractionDigits:2})}</td><td>${data.ventasImportBrutasUSD.toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>
-                            <tr><td><strong>Total Ventas Brutas</strong></td><td><strong>${(calc.ventasBrutasUSD*t).toLocaleString('en-US',{minimumFractionDigits:2})}</strong></td><td><strong>${calc.ventasBrutasUSD.toLocaleString('en-US',{minimumFractionDigits:2})}</strong></td></tr>
-                            <tr><td>Ventas HPS Netas</td><td>${(data.ventasHPSNetasUSD*t).toLocaleString('en-US',{minimumFractionDigits:2})}</td><td>${data.ventasHPSNetasUSD.toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>
-                            <tr><td>Ventas Import Netas</td><td>${(data.ventasImportNetasUSD*t).toLocaleString('en-US',{minimumFractionDigits:2})}</td><td>${data.ventasImportNetasUSD.toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>
-                            <tr><td><strong>Total Ventas Netas</strong></td><td><strong>${(calc.ventasNetasUSD*t).toLocaleString('en-US',{minimumFractionDigits:2})}</strong></td><td><strong>${calc.ventasNetasUSD.toLocaleString('en-US',{minimumFractionDigits:2})}</strong></td></tr>
-                            <tr class="section-divider"><td colspan="3">📦 Compras Suplidores e Impuestos</td></tr>
-                            <tr><td>ASSA ABLOY GLOBAL SOL.</td><td>${(data.assaAbloyUSD*t).toLocaleString('en-US',{minimumFractionDigits:2})}</td><td>${data.assaAbloyUSD.toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>
-                            <tr><td>ADUANAS</td><td>${(data.aduanasUSD*t).toLocaleString('en-US',{minimumFractionDigits:2})}</td><td>${data.aduanasUSD.toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>
-                            ${(data.otrosSuplidores||[]).map(s=>`<tr><td>${s.nombre||'Suplidor'}</td><td>${((s.valorUSD||0)*t).toLocaleString('en-US',{minimumFractionDigits:2})}</td><td>${(s.valorUSD||0).toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>`).join('')}
-                            <tr><td><strong>Total Compras</strong></td><td><strong>${(calc.totalComprasUSD*t).toLocaleString('en-US',{minimumFractionDigits:2})}</strong></td><td><strong>${calc.totalComprasUSD.toLocaleString('en-US',{minimumFractionDigits:2})}</strong></td></tr>
-                            <tr><td>+ Inv.Inicial - Inv.Final</td><td>${(calc.variacionInvUSD*t).toLocaleString('en-US',{minimumFractionDigits:2})}</td><td>${calc.variacionInvUSD.toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>
-                            <tr><td><strong>Total Costos</strong></td><td><strong>${(calc.totalCostosUSD*t).toLocaleString('en-US',{minimumFractionDigits:2})}</strong></td><td><strong>${calc.totalCostosUSD.toLocaleString('en-US',{minimumFractionDigits:2})}</strong></td></tr>
-                            <tr class="section-divider"><td colspan="3">💼 Gastos Generales y Administrativos</td></tr>
-                            <tr><td>Nómina Global</td><td>${data.nominaRD.toLocaleString('en-US',{minimumFractionDigits:2})}</td><td>${(data.nominaRD/t).toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>
-                            <tr><td>Caja Chica</td><td>${data.cajaChicaRD.toLocaleString('en-US',{minimumFractionDigits:2})}</td><td>${(data.cajaChicaRD/t).toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>
-                            <tr><td>Eventos y Publicidad</td><td>${data.eventosRD.toLocaleString('en-US',{minimumFractionDigits:2})}</td><td>${(data.eventosRD/t).toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>
-                            <tr><td>Correos Electrónicos</td><td>${data.correosRD.toLocaleString('en-US',{minimumFractionDigits:2})}</td><td>${(data.correosRD/t).toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>
-                            <tr><td>Seguro Guagua HPS</td><td>${data.seguroGuaguaRD.toLocaleString('en-US',{minimumFractionDigits:2})}</td><td>${(data.seguroGuaguaRD/t).toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>
-                            <tr><td>Combustible Guagua HPS</td><td>${(data.combustibleUSD*t).toLocaleString('en-US',{minimumFractionDigits:2})}</td><td>${data.combustibleUSD.toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>
-                            <tr><td>Intereses Fin. Vehículo</td><td>${(data.interesesUSD*t).toLocaleString('en-US',{minimumFractionDigits:2})}</td><td>${data.interesesUSD.toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>
-                            <tr><td>Combustible Asig. Alejandro P.</td><td>${data.combAlejandroRD.toLocaleString('en-US',{minimumFractionDigits:2})}</td><td>${(data.combAlejandroRD/t).toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>
-                            <tr><td>Teléfonos / Data</td><td>${(data.telefonosUSD*t).toLocaleString('en-US',{minimumFractionDigits:2})}</td><td>${data.telefonosUSD.toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>
-                            <tr><td>Gastos de Viajes</td><td>${data.viajesRD.toLocaleString('en-US',{minimumFractionDigits:2})}</td><td>${(data.viajesRD/t).toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>
-                            <tr><td>Electricidad, Agua y Otros</td><td>${(data.electricidadUSD*t).toLocaleString('en-US',{minimumFractionDigits:2})}</td><td>${data.electricidadUSD.toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>
-                            <tr><td>Depreciación General</td><td>${(data.depreciacionUSD*t).toLocaleString('en-US',{minimumFractionDigits:2})}</td><td>${data.depreciacionUSD.toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>
-                            <tr><td>Seguros Generales Empresa</td><td>${(data.segurosGenUSD*t).toLocaleString('en-US',{minimumFractionDigits:2})}</td><td>${data.segurosGenUSD.toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>
-                            <tr><td><strong>Total Gastos</strong></td><td><strong>${(calc.gastosFijosRD + calc.gastosFijosUSD*t).toLocaleString('en-US',{minimumFractionDigits:2})}</strong></td><td><strong>${calc.totalGastosUSD.toLocaleString('en-US',{minimumFractionDigits:2})}</strong></td></tr>
-                            <tr class="section-divider"><td colspan="3">📞 KPIs Comerciales</td></tr>
-                            <tr><td>Total Visitas/Contactos</td><td colspan="2">${calc.totalVisitas} (Visitas:${data.pctVisitas}% | LLam/Wapp:${data.pctLlamadas}% | Email:${data.pctEmails}%)</td></tr>
-                            <tr><td>Presupuestos Realizados</td><td colspan="2">${calc.cantPresupuestos} presupuestos | Monto: $${calc.montoPresupuestadoUSD.toLocaleString()}</td></tr>
-                            <tr><td>Presupuestos Aprobados</td><td colspan="2">${calc.cantAprobados} aprobados | Valor Cerrado: $${calc.valorCerradoUSD.toLocaleString()}</td></tr>
-                            <tr><td>Tasa Conversión Visitas→Presup.</td><td colspan="2"><strong>${calc.tasaConversionVisitas.toFixed(1)}%</strong></td></tr>
-                            <tr><td>Tasa Aprobación Presupuestos</td><td colspan="2"><strong>${calc.tasaAprobacion.toFixed(1)}%</strong></td></tr>
-                            <tr><td>Tasa Cierre en Valor</td><td colspan="2"><strong>${calc.tasaCierreValor.toFixed(1)}%</strong></td></tr>
-                            <tr class="highlight-row"><td><strong>Beneficio Neto (US$)</strong></td><td colspan="2"><strong>$${calc.netoUSD.toLocaleString('en-US',{minimumFractionDigits:2})} (${calc.margenNetoPct.toFixed(2)}%)</strong></td></tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="mini-charts-row">
-                    <div class="mini-chart">
-                        <h4>Distribución de Contactos</h4>
-                        <canvas id="chartVisitasTipo"></canvas>
-                    </div>
-                    <div class="mini-chart">
-                        <h4>Presupuestos Aprobados</h4>
-                        <canvas id="chartPresupVsAprob"></canvas>
-                    </div>
-                    <div class="mini-chart">
-                        <h4>Valor Presupuestado vs Cerrado</h4>
-                        <canvas id="chartMontoVsCerrado"></canvas>
-                    </div>
-                </div>
-            `;
-            document.getElementById('resumenMensualContent').innerHTML = contenido;
+function renderDSO() {
+    const ms = getMesesActivos();
+    let cxc = 0;
+    const rows = ms.map((m,i) => {
+        const saldoIni = cxc;
+        const factMes = m.ventasBrutasUSD;
+        const cobMes = m.cobradoBruto;
+        const saldoFin = saldoIni + factMes - cobMes;
+        const dso = factMes > 0 ? (saldoFin / factMes) * DIAS_MES[m.idx] : 0;
+        const eficiencia = (saldoIni + factMes) > 0 ? cobMes / (saldoIni + factMes) * 100 : 0;
+        const cobranzaPct = factMes > 0 ? cobMes / factMes * 100 : 0;
+        cxc = saldoFin;
+        return { ...m, saldoIni, saldoFin, dso, eficiencia, cobranzaPct, diff: cobMes - factMes };
+    });
+    const totFact = ms.reduce((s,m)=>s+m.ventasBrutasUSD,0);
+    const totCob = ms.reduce((s,m)=>s+m.cobradoBruto,0);
+    const lastCxC = rows.length > 0 ? rows[rows.length-1].saldoFin : 0;
+    const avgDSO = rows.filter(r=>r.dso>0).reduce((s,r)=>s+r.dso,0) / (rows.filter(r=>r.dso>0).length||1);
 
-            setTimeout(() => {
-                if (chartVisitasTipo) chartVisitasTipo.destroy();
-                if (chartPresupVsAprob) chartPresupVsAprob.destroy();
-                if (chartMontoVsCerrado) chartMontoVsCerrado.destroy();
+    let alertHTML = '';
+    if (avgDSO > 45) alertHTML = '<div class="alert-box danger">⚠️ <strong>Alerta:</strong> Su DSO promedio supera los 45 días. Esto indica problemas serios de liquidez. Se recomienda revisar las políticas de crédito.</div>';
+    else if (avgDSO > 30) alertHTML = '<div class="alert-box warning">⚠️ <strong>Atención:</strong> Su DSO promedio está entre 30-45 días. Considere acelerar la cobranza en cuentas vencidas.</div>';
+    else alertHTML = '<div class="alert-box success">✅ Su DSO promedio es menor a 30 días. La gestión de cobranza es saludable.</div>';
 
-                const ctx1 = document.getElementById('chartVisitasTipo')?.getContext('2d');
-                if (ctx1) {
-                    chartVisitasTipo = new Chart(ctx1, {
-                        type: 'pie',
-                        data: { labels: ['Presencial', 'Llamadas/WA', 'Emails'], datasets: [{ data: [visitasData.presencial, visitasData.llamadas, visitasData.emails], backgroundColor: ['#1a3c5e', '#e8873a', '#2c5f8a'] }] },
-                        options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
-                    });
-                }
-                const ctx2 = document.getElementById('chartPresupVsAprob')?.getContext('2d');
-                if (ctx2) {
-                    chartPresupVsAprob = new Chart(ctx2, {
-                        type: 'pie',
-                        data: { labels: ['Aprobados', 'Pendientes'], datasets: [{ data: [presupAprob, presupPend], backgroundColor: ['#2e7d32', '#e0e0e0'] }] },
-                        options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
-                    });
-                }
-                const ctx3 = document.getElementById('chartMontoVsCerrado')?.getContext('2d');
-                if (ctx3) {
-                    chartMontoVsCerrado = new Chart(ctx3, {
-                        type: 'pie',
-                        data: { labels: ['Cerrado', 'Pendiente'], datasets: [{ data: [valorCerrado, valorPend], backgroundColor: ['#1565c0', '#e0e0e0'] }] },
-                        options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
-                    });
-                }
-            }, 100);
-            card.scrollIntoView({ behavior: 'smooth' });
-        };
+    document.getElementById('sp-dso').innerHTML = `
+        <div class="alert-box info">⏱ <strong>Análisis de Desfase:</strong> Mide cuánto tiempo tarda en cobrar sus ventas (DSO) y el saldo pendiente acumulado en cuentas por cobrar.</div>
+        ${alertHTML}
+        <div class="kpi-grid">
+            <div class="kpi-card dso"><div class="kpi-label">DSO Promedio</div><div class="kpi-value">${avgDSO.toFixed(1)} días</div><div class="kpi-sub">${avgDSO>45?'🔴 Crítico':avgDSO>30?'🟡 Atención':'🟢 Saludable'}</div></div>
+            <div class="kpi-card ${lastCxC>0?'danger':'success'}"><div class="kpi-label">CxC Actual</div><div class="kpi-value">$${fmt(Math.abs(lastCxC))}</div><div class="kpi-sub">${lastCxC>0?'Pendiente de cobro':'Cobro excedente'}</div></div>
+            <div class="kpi-card"><div class="kpi-label">Total Facturado</div><div class="kpi-value">$${fmt(totFact)}</div></div>
+            <div class="kpi-card cash"><div class="kpi-label">Total Cobrado</div><div class="kpi-value">$${fmt(totCob)}</div><div class="kpi-sub">${fmtP(totFact>0?totCob/totFact*100:0)} del facturado</div></div>
+        </div>
+        <div class="charts-row">
+            <div class="chart-card"><h3>Evolución CxC y DSO</h3><canvas id="chDSO"></canvas></div>
+            <div class="chart-card"><h3>Eficiencia de Cobranza (%)</h3><canvas id="chEfic"></canvas></div>
+        </div>
+        <div class="form-card"><h3>📋 Detalle Cuentas por Cobrar</h3>
+            <div class="table-wrapper"><table><thead><tr><th>Concepto</th>${rows.map(r=>`<th>${r.mes}</th>`).join('')}</tr></thead><tbody>
+                <tr><td>Facturado Bruto</td>${rows.map(r=>`<td>${fmt(r.ventasBrutasUSD)}</td>`).join('')}</tr>
+                <tr><td>Cobrado Bruto</td>${rows.map(r=>`<td>${fmt(r.cobradoBruto)}</td>`).join('')}</tr>
+                <tr><td>Diferencia</td>${rows.map(r=>`<td class="${r.diff>=0?'positive':'negative'}">${fmt(r.diff)}</td>`).join('')}</tr>
+                <tr><td>% Cobranza</td>${rows.map(r=>`<td>${fmtP(r.cobranzaPct)}</td>`).join('')}</tr>
+                <tr class="section-divider"><td colspan="${rows.length+1}">Cuentas por Cobrar</td></tr>
+                <tr><td>Saldo Inicial CxC</td>${rows.map(r=>`<td>${fmt(r.saldoIni)}</td>`).join('')}</tr>
+                <tr><td>(+) Facturado</td>${rows.map(r=>`<td>${fmt(r.ventasBrutasUSD)}</td>`).join('')}</tr>
+                <tr><td>(-) Cobrado</td>${rows.map(r=>`<td>${fmt(r.cobradoBruto)}</td>`).join('')}</tr>
+                <tr class="highlight-row"><td><strong>Saldo Final CxC</strong></td>${rows.map(r=>`<td class="${r.saldoFin>0?'negative':'positive'}"><strong>${fmt(r.saldoFin)}</strong></td>`).join('')}</tr>
+                <tr class="section-divider"><td colspan="${rows.length+1}">Indicadores</td></tr>
+                <tr><td>DSO (días)</td>${rows.map(r=>`<td><strong>${r.dso.toFixed(1)}</strong></td>`).join('')}</tr>
+                <tr><td>Eficiencia Cobranza</td>${rows.map(r=>`<td>${fmtP(r.eficiencia)}</td>`).join('')}</tr>
+            </tbody></table></div>
+        </div>`;
 
-        // --- VISTA ANUAL ---
-        function renderizarVistaAnual() {
-            const mesesConDatos = datosMensuales.map((d, i) => ({ ...calcularMes(d), mes: MESES_NOMBRES[i], tasa: d.tasaCambio }));
-            const total = mesesConDatos.reduce((acc, m) => {
-                acc.ventasBrutasUSD += m.ventasBrutasUSD; acc.ventasNetasUSD += m.ventasNetasUSD; acc.totalComprasUSD += m.totalComprasUSD; acc.totalCostosUSD += m.totalCostosUSD; acc.margenBrutoUSD += m.margenBrutoUSD; acc.totalGastosUSD += m.totalGastosUSD; acc.beneficioAntesImpUSD += m.beneficioAntesImpUSD; acc.isrUSD += m.isrUSD; acc.netoUSD += m.netoUSD; acc.gastosFijosRD += m.gastosFijosRD; acc.gastosFijosUSD += m.gastosFijosUSD; acc.totalVisitas += m.totalVisitas; acc.cantPresupuestos += m.cantPresupuestos; acc.cantAprobados += m.cantAprobados; acc.montoPresupuestadoUSD += m.montoPresupuestadoUSD; acc.valorCerradoUSD += m.valorCerradoUSD;
-                return acc;
-            }, { ventasBrutasUSD: 0, ventasNetasUSD: 0, totalComprasUSD: 0, totalCostosUSD: 0, margenBrutoUSD: 0, totalGastosUSD: 0, beneficioAntesImpUSD: 0, isrUSD: 0, netoUSD: 0, gastosFijosRD: 0, gastosFijosUSD: 0, totalVisitas: 0, cantPresupuestos: 0, cantAprobados: 0, montoPresupuestadoUSD: 0, valorCerradoUSD: 0 });
-            const margenBrutoPct = total.ventasNetasUSD > 0 ? total.margenBrutoUSD / total.ventasNetasUSD * 100 : 0;
-            const margenNetoPct = total.ventasNetasUSD > 0 ? total.netoUSD / total.ventasNetasUSD * 100 : 0;
-            const tasaConvAnual = total.totalVisitas > 0 ? total.cantPresupuestos / total.totalVisitas * 100 : 0;
-            const tasaAprobAnual = total.cantPresupuestos > 0 ? total.cantAprobados / total.cantPresupuestos * 100 : 0;
-            const tasaCierreAnual = total.montoPresupuestadoUSD > 0 ? total.valorCerradoUSD / total.montoPresupuestadoUSD * 100 : 0;
+    setTimeout(() => {
+        destroyChart('chDSO');
+        _charts.chDSO = new Chart(document.getElementById('chDSO'), {type:'bar',data:{labels:rows.map(r=>r.mes),datasets:[{type:'bar',label:'CxC Saldo',data:rows.map(r=>r.saldoFin),backgroundColor:'rgba(106,27,154,0.3)',borderColor:'#6a1b9a',borderWidth:1,borderRadius:6,yAxisID:'y'},{type:'line',label:'DSO (días)',data:rows.map(r=>r.dso),borderColor:'#c62828',backgroundColor:'rgba(198,40,40,0.1)',pointRadius:6,pointBackgroundColor:'#c62828',tension:0.3,yAxisID:'y1'}]},options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{position:'left',ticks:{callback:v=>'$'+v.toLocaleString()}},y1:{position:'right',grid:{drawOnChartArea:false},ticks:{callback:v=>v+' días'}}}}});
+        destroyChart('chEfic');
+        _charts.chEfic = new Chart(document.getElementById('chEfic'), {type:'bar',data:{labels:rows.map(r=>r.mes),datasets:[{label:'Eficiencia %',data:rows.map(r=>r.eficiencia),backgroundColor:rows.map(r=>r.eficiencia>=60?'#2e7d32':r.eficiencia>=40?'#f9a825':'#c62828'),borderRadius:6}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{max:100,ticks:{callback:v=>v+'%'}}}}});
+    }, 50);
+}
 
-            document.getElementById('kpiAnnual').innerHTML = `
-                <div class="kpi-card"><div class="kpi-label">Ventas Netas Totales</div><div class="kpi-value">$${total.ventasNetasUSD.toLocaleString('en-US',{minimumFractionDigits:2})}</div></div>
-                <div class="kpi-card accent"><div class="kpi-label">Margen Bruto Total</div><div class="kpi-value">$${total.margenBrutoUSD.toLocaleString('en-US',{minimumFractionDigits:2})}</div><div class="kpi-sub">${margenBrutoPct.toFixed(2)}%</div></div>
-                <div class="kpi-card"><div class="kpi-label">Gastos Totales</div><div class="kpi-value">$${total.totalGastosUSD.toLocaleString('en-US',{minimumFractionDigits:2})}</div></div>
-                <div class="kpi-card ${total.netoUSD>=0?'success':'danger'}"><div class="kpi-label">Neto Anual</div><div class="kpi-value">$${total.netoUSD.toLocaleString('en-US',{minimumFractionDigits:2})}</div><div class="kpi-sub">Margen Neto: ${margenNetoPct.toFixed(2)}%</div></div>
-            `;
-            document.getElementById('kpiComercialAnnual').innerHTML = `
-                <div class="kpi-card info"><div class="kpi-label">Total Visitas Anual</div><div class="kpi-value">${total.totalVisitas}</div><div class="kpi-sub">→ ${total.cantPresupuestos} presupuestos</div></div>
-                <div class="kpi-card info"><div class="kpi-label">Tasa Conversión Visitas→Presup.</div><div class="kpi-value">${tasaConvAnual.toFixed(1)}%</div></div>
-                <div class="kpi-card info"><div class="kpi-label">Tasa Aprobación Presupuestos</div><div class="kpi-value">${tasaAprobAnual.toFixed(1)}%</div><div class="kpi-sub">${total.cantAprobados} de ${total.cantPresupuestos}</div></div>
-                <div class="kpi-card info"><div class="kpi-label">Tasa Cierre en Valor</div><div class="kpi-value">${tasaCierreAnual.toFixed(1)}%</div><div class="kpi-sub">$${total.valorCerradoUSD.toLocaleString()} de $${total.montoPresupuestadoUSD.toLocaleString()}</div></div>
-            `;
+function renderCompare() {
+    const ms = getMesesActivos();
+    const totDev = ms.reduce((a,m) => { a.vn+=m.ventasNetasUSD; a.n+=m.netoUSD; return a; }, {vn:0,n:0});
+    const totCaj = ms.reduce((a,m) => { a.cn+=m.cobradoNeto; a.n+=m.netoCaja; return a; }, {cn:0,n:0});
+    const gap = totCaj.n - totDev.n;
+    const gapPct = totDev.n !== 0 ? gap/Math.abs(totDev.n)*100 : 0;
 
-            const ctx1 = document.getElementById('chartVentasAnual').getContext('2d');
-            if (window._chartVentasAnual) window._chartVentasAnual.destroy();
-            window._chartVentasAnual = new Chart(ctx1, { type: 'bar', data: { labels: MESES_NOMBRES, datasets: [{ label: 'Ventas Netas HPS (USD)', data: datosMensuales.map(d => d.ventasHPSNetasUSD || 0), backgroundColor: '#1a3c5e', borderRadius: 6 }, { label: 'Ventas Netas Import (USD)', data: datosMensuales.map(d => d.ventasImportNetasUSD || 0), backgroundColor: '#e8873a', borderRadius: 6 }] }, options: { responsive: true, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true } } } });
+    document.getElementById('sp-compare').innerHTML = `
+        <div class="alert-box ${gap<0?'danger':'success'}">⚖️ <strong>Brecha Acumulada:</strong> La utilidad de caja es <strong>$${fmt(Math.abs(gap))}</strong> ${gap>=0?'mayor':'menor'} que la devengada (${fmtP(Math.abs(gapPct))} de diferencia). ${gap<0?'Esto significa que ha reportado más utilidad de la que realmente ha cobrado.':'Esto significa que ha cobrado facturas de períodos anteriores.'}</div>
+        <div class="kpi-grid">
+            <div class="kpi-card"><div class="kpi-label">Utilidad Devengada</div><div class="kpi-value">$${fmt(totDev.n)}</div><div class="kpi-sub">Base facturación</div></div>
+            <div class="kpi-card cash"><div class="kpi-label">Utilidad de Caja</div><div class="kpi-value">$${fmt(totCaj.n)}</div><div class="kpi-sub">Base cobranza</div></div>
+            <div class="kpi-card ${gap>=0?'success':'danger'}"><div class="kpi-label">Brecha</div><div class="kpi-value">$${fmt(Math.abs(gap))}</div><div class="kpi-sub">${gap>=0?'▲ Caja superior':'▼ Caja inferior'}</div></div>
+            <div class="kpi-card dso"><div class="kpi-label">Impacto %</div><div class="kpi-value">${fmtP(Math.abs(gapPct))}</div><div class="kpi-sub">${gap>=0?'Favorable':'Desfavorable'}</div></div>
+        </div>
+        <div class="charts-row">
+            <div class="chart-card"><h3>Utilidad Neta: Devengado vs Caja</h3><canvas id="chCompNeto"></canvas></div>
+            <div class="chart-card"><h3>Brecha Mensual</h3><canvas id="chCompGap"></canvas></div>
+        </div>
+        <div class="form-card"><h3>📋 Cuadro Comparativo Mensual</h3>
+            <div class="table-wrapper"><table><thead><tr><th>Mes</th><th>Ventas Netas (Dev.)</th><th>Cobrado Neto (Caja)</th><th>Utilidad Devengada</th><th>Utilidad Caja</th><th>Brecha</th><th>Impacto</th></tr></thead><tbody>
+                ${ms.map(m => {
+                    const g = m.netoCaja - m.netoUSD;
+                    const gp = m.netoUSD!==0?g/Math.abs(m.netoUSD)*100:0;
+                    return `<tr><td>${m.mes}</td><td>${fmt(m.ventasNetasUSD)}</td><td>${fmt(m.cobradoNeto)}</td><td>${fmt(m.netoUSD)}</td><td>${fmt(m.netoCaja)}</td><td class="${g>=0?'positive':'negative'}">${fmt(g)}</td><td class="${g>=0?'positive':'negative'}">${fmtP(gp)}</td></tr>`;
+                }).join('')}
+                <tr class="highlight-row"><td><strong>Total</strong></td><td><strong>${fmt(totDev.vn)}</strong></td><td><strong>${fmt(totCaj.cn)}</strong></td><td><strong>${fmt(totDev.n)}</strong></td><td><strong>${fmt(totCaj.n)}</strong></td><td class="${gap>=0?'positive':'negative'}"><strong>${fmt(gap)}</strong></td><td class="${gap>=0?'positive':'negative'}"><strong>${fmtP(Math.abs(gapPct))}</strong></td></tr>
+            </tbody></table></div>
+        </div>`;
 
-            const ctx2 = document.getElementById('chartKPIsComerciales').getContext('2d');
-            if (window._chartKPIsComerciales) window._chartKPIsComerciales.destroy();
-            window._chartKPIsComerciales = new Chart(ctx2, { type: 'line', data: { labels: MESES_NOMBRES, datasets: [{ label: 'Tasa Conversión Visitas→Presup. (%)', data: mesesConDatos.map(m => m.tasaConversionVisitas), borderColor: '#1565c0', backgroundColor: 'rgba(21,101,192,0.1)', fill: true, tension: 0.3, pointRadius: 4 }, { label: 'Tasa Aprobación (%)', data: mesesConDatos.map(m => m.tasaAprobacion), borderColor: '#2e7d32', backgroundColor: 'rgba(46,125,50,0.1)', fill: true, tension: 0.3, pointRadius: 4 }, { label: 'Tasa Cierre Valor (%)', data: mesesConDatos.map(m => m.tasaCierreValor), borderColor: '#e8873a', backgroundColor: 'rgba(232,135,58,0.1)', fill: true, tension: 0.3, pointRadius: 4 }] }, options: { responsive: true, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true, ticks: { callback: v => v + '%' } } } } });
+    setTimeout(() => {
+        destroyChart('chCompNeto');
+        _charts.chCompNeto = new Chart(document.getElementById('chCompNeto'), {type:'bar',data:{labels:ms.map(m=>m.mes),datasets:[{label:'Devengado',data:ms.map(m=>m.netoUSD),backgroundColor:'#1a3c5e',borderRadius:6},{label:'Caja',data:ms.map(m=>m.netoCaja),backgroundColor:'#00897b',borderRadius:6}]},options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{ticks:{callback:v=>'$'+v.toLocaleString()}}}}});
+        destroyChart('chCompGap');
+        const gaps = ms.map(m=>m.netoCaja-m.netoUSD);
+        _charts.chCompGap = new Chart(document.getElementById('chCompGap'), {type:'bar',data:{labels:ms.map(m=>m.mes),datasets:[{label:'Brecha (Caja-Dev)',data:gaps,backgroundColor:gaps.map(g=>g>=0?'#2e7d32':'#c62828'),borderRadius:6}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'$'+v.toLocaleString()}}}}});
+    }, 50);
+}
 
-            const ctx3 = document.getElementById('chartMargenesAnual').getContext('2d');
-            if (window._chartMargenesAnual) window._chartMargenesAnual.destroy();
-            window._chartMargenesAnual = new Chart(ctx3, { type: 'line', data: { labels: MESES_NOMBRES, datasets: [{ label: 'Margen Bruto %', data: mesesConDatos.map(m => m.margenBrutoPct), borderColor: '#2e7d32', backgroundColor: 'rgba(46,125,50,0.1)', fill: true, tension: 0.3, pointRadius: 5 }, { label: 'Margen Neto %', data: mesesConDatos.map(m => m.margenNetoPct), borderColor: '#e8873a', backgroundColor: 'rgba(232,135,58,0.1)', fill: true, tension: 0.3, pointRadius: 5 }] }, options: { responsive: true, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true, ticks: { callback: v => v + '%' } } } } });
+// ===========================
+// ANNUAL VIEW
+// ===========================
+function renderAnual() {
+    const ms = datosMensuales.map((d,i) => ({...calcularMes(d), mes:MESES[i]}));
+    const tot = ms.reduce((a,m) => { a.vb+=m.ventasBrutasUSD; a.vn+=m.ventasNetasUSD; a.tc+=m.totalComprasUSD; a.tcos+=m.totalCostosUSD; a.mb+=m.margenBrutoUSD; a.tg+=m.totalGastosUSD; a.ebit+=m.ebitUSD; a.isr+=m.isrUSD; a.n+=m.netoUSD; a.grd+=m.gastosFijosRD; a.gusd+=m.gastosFijosUSD; a.tv+=m.totalVisitas; a.cp+=m.cantPresupuestos; a.ca+=m.cantAprobados; a.mp+=m.montoPresupuestadoUSD; a.vc+=m.valorCerradoUSD; return a; }, {vb:0,vn:0,tc:0,tcos:0,mb:0,tg:0,ebit:0,isr:0,n:0,grd:0,gusd:0,tv:0,cp:0,ca:0,mp:0,vc:0});
+    const mbp = tot.vn>0?tot.mb/tot.vn*100:0, mnp = tot.vn>0?tot.n/tot.vn*100:0;
+    const tcv = tot.tv>0?tot.cp/tot.tv*100:0, tap = tot.cp>0?tot.ca/tot.cp*100:0, tcvl = tot.mp>0?tot.vc/tot.mp*100:0;
 
-            document.getElementById('tablaAnual').innerHTML = `
-                <table><thead><tr><th>Concepto</th>${MESES_NOMBRES.map(m=>`<th>${m}</th>`).join('')}<th>Total</th></tr></thead><tbody>
-                    <tr><td>Ventas Netas (USD)</td>${mesesConDatos.map(m=>`<td>${m.ventasNetasUSD.toFixed(2)}</td>`).join('')}<td><strong>${total.ventasNetasUSD.toFixed(2)}</strong></td></tr>
-                    <tr><td>Total Costos (USD)</td>${mesesConDatos.map(m=>`<td>${m.totalCostosUSD.toFixed(2)}</td>`).join('')}<td><strong>${total.totalCostosUSD.toFixed(2)}</strong></td></tr>
-                    <tr><td>Margen Bruto (USD)</td>${mesesConDatos.map(m=>`<td>${m.margenBrutoUSD.toFixed(2)}</td>`).join('')}<td><strong>${total.margenBrutoUSD.toFixed(2)}</strong></td></tr>
-                    <tr><td>Total Gastos (USD)</td>${mesesConDatos.map(m=>`<td>${m.totalGastosUSD.toFixed(2)}</td>`).join('')}<td><strong>${total.totalGastosUSD.toFixed(2)}</strong></td></tr>
-                    <tr class="section-divider"><td colspan="14">📞 KPIs Comerciales Mensuales</td></tr>
-                    <tr><td>Visitas/Contactos (#)</td>${mesesConDatos.map(m=>`<td>${m.totalVisitas}</td>`).join('')}<td><strong>${total.totalVisitas}</strong></td></tr>
-                    <tr><td>Presupuestos (#)</td>${mesesConDatos.map(m=>`<td>${m.cantPresupuestos}</td>`).join('')}<td><strong>${total.cantPresupuestos}</strong></td></tr>
-                    <tr><td>Aprobados (#)</td>${mesesConDatos.map(m=>`<td>${m.cantAprobados}</td>`).join('')}<td><strong>${total.cantAprobados}</strong></td></tr>
-                    <tr><td>Tasa Conv. Visitas→Presup. (%)</td>${mesesConDatos.map(m=>`<td>${m.tasaConversionVisitas.toFixed(1)}%</td>`).join('')}<td><strong>${tasaConvAnual.toFixed(1)}%</strong></td></tr>
-                    <tr><td>Tasa Aprobación (%)</td>${mesesConDatos.map(m=>`<td>${m.tasaAprobacion.toFixed(1)}%</td>`).join('')}<td><strong>${tasaAprobAnual.toFixed(1)}%</strong></td></tr>
-                    <tr><td>Tasa Cierre Valor (%)</td>${mesesConDatos.map(m=>`<td>${m.tasaCierreValor.toFixed(1)}%</td>`).join('')}<td><strong>${tasaCierreAnual.toFixed(1)}%</strong></td></tr>
-                    <tr class="highlight-row"><td>Neto (USD)</td>${mesesConDatos.map(m=>`<td class="${m.netoUSD<0?'negative':''}">${m.netoUSD.toFixed(2)}</td>`).join('')}<td><strong>${total.netoUSD.toFixed(2)}</strong></td></tr>
-                </tbody></table>
-            `;
-        }
+    document.getElementById('kpiAnnual').innerHTML = `
+        <div class="kpi-card"><div class="kpi-label">Ventas Netas</div><div class="kpi-value">$${fmt(tot.vn)}</div></div>
+        <div class="kpi-card accent"><div class="kpi-label">Margen Bruto</div><div class="kpi-value">$${fmt(tot.mb)}</div><div class="kpi-sub">${fmtP(mbp)}</div></div>
+        <div class="kpi-card"><div class="kpi-label">Gastos</div><div class="kpi-value">$${fmt(tot.tg)}</div></div>
+        <div class="kpi-card ${tot.n>=0?'success':'danger'}"><div class="kpi-label">Neto</div><div class="kpi-value">$${fmt(tot.n)}</div><div class="kpi-sub">${fmtP(mnp)}</div></div>`;
+    document.getElementById('kpiComercialAnnual').innerHTML = `
+        <div class="kpi-card info"><div class="kpi-label">Visitas</div><div class="kpi-value">${tot.tv}</div></div>
+        <div class="kpi-card info"><div class="kpi-label">Conv. Visitas→Presup.</div><div class="kpi-value">${fmtP(tcv)}</div></div>
+        <div class="kpi-card info"><div class="kpi-label">Tasa Aprobación</div><div class="kpi-value">${fmtP(tap)}</div></div>
+        <div class="kpi-card info"><div class="kpi-label">Cierre en Valor</div><div class="kpi-value">${fmtP(tcvl)}</div></div>`;
 
-        // --- DASHBOARD KPIs ---
-        function renderizarDashboard() {
-            const mesesConDatos = datosMensuales.map((d, i) => ({ ...calcularMes(d), mes: MESES_NOMBRES[i], tasa: d.tasaCambio }));
-            const total = mesesConDatos.reduce((acc, m) => {
-                acc.ventasNetasUSD += m.ventasNetasUSD; acc.margenBrutoUSD += m.margenBrutoUSD; acc.totalGastosUSD += m.totalGastosUSD; acc.netoUSD += m.netoUSD; acc.gastosFijosRD += m.gastosFijosRD; acc.gastosFijosUSD += m.gastosFijosUSD; acc.totalVisitas += m.totalVisitas; acc.cantPresupuestos += m.cantPresupuestos; acc.cantAprobados += m.cantAprobados; acc.montoPresupuestadoUSD += m.montoPresupuestadoUSD; acc.valorCerradoUSD += m.valorCerradoUSD;
-                return acc;
-            }, { ventasNetasUSD: 0, margenBrutoUSD: 0, totalGastosUSD: 0, netoUSD: 0, gastosFijosRD: 0, gastosFijosUSD: 0, totalVisitas: 0, cantPresupuestos: 0, cantAprobados: 0, montoPresupuestadoUSD: 0, valorCerradoUSD: 0 });
-            const margenNetoPct = total.ventasNetasUSD > 0 ? total.netoUSD / total.ventasNetasUSD * 100 : 0;
-            const margenBrutoPct = total.ventasNetasUSD > 0 ? total.margenBrutoUSD / total.ventasNetasUSD * 100 : 0;
-            const ratioGastos = total.ventasNetasUSD > 0 ? total.totalGastosUSD / total.ventasNetasUSD * 100 : 0;
-            const tasaConvAnual = total.totalVisitas > 0 ? total.cantPresupuestos / total.totalVisitas * 100 : 0;
-            const tasaAprobAnual = total.cantPresupuestos > 0 ? total.cantAprobados / total.cantPresupuestos * 100 : 0;
-            const tasaCierreAnual = total.montoPresupuestadoUSD > 0 ? total.valorCerradoUSD / total.montoPresupuestadoUSD * 100 : 0;
+    const conDatos = ms.filter(m=>m.ventasBrutasUSD>0);
+    setTimeout(() => {
+        destroyChart('cVA'); _charts.cVA = new Chart(document.getElementById('chartVentasAnual'),{type:'bar',data:{labels:conDatos.map(m=>m.mes),datasets:[{label:'HPS',data:conDatos.map((_,i)=>datosMensuales.filter((_,j)=>calcularMes(datosMensuales[j]).ventasBrutasUSD>0)[i]?.ventasHPSNetasUSD||0),backgroundColor:'#1a3c5e',borderRadius:6},{label:'Import',data:conDatos.map((_,i)=>datosMensuales.filter((_,j)=>calcularMes(datosMensuales[j]).ventasBrutasUSD>0)[i]?.ventasImportNetasUSD||0),backgroundColor:'#e8873a',borderRadius:6}]},options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true}}}});
+        destroyChart('cKC'); _charts.cKC = new Chart(document.getElementById('chartKPIsComerciales'),{type:'line',data:{labels:conDatos.map(m=>m.mes),datasets:[{label:'Conv. Visitas %',data:conDatos.map(m=>m.tasaConversionVisitas),borderColor:'#1565c0',fill:true,backgroundColor:'rgba(21,101,192,0.1)',tension:0.3,pointRadius:4},{label:'Aprobación %',data:conDatos.map(m=>m.tasaAprobacion),borderColor:'#2e7d32',fill:true,backgroundColor:'rgba(46,125,50,0.1)',tension:0.3,pointRadius:4},{label:'Cierre Valor %',data:conDatos.map(m=>m.tasaCierreValor),borderColor:'#e8873a',fill:true,backgroundColor:'rgba(232,135,58,0.1)',tension:0.3,pointRadius:4}]},options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{ticks:{callback:v=>v+'%'}}}}});
+        destroyChart('cMA'); _charts.cMA = new Chart(document.getElementById('chartMargenesAnual'),{type:'line',data:{labels:conDatos.map(m=>m.mes),datasets:[{label:'Margen Bruto %',data:conDatos.map(m=>m.margenBrutoPct),borderColor:'#2e7d32',fill:true,backgroundColor:'rgba(46,125,50,0.1)',tension:0.3,pointRadius:5},{label:'Margen Neto %',data:conDatos.map(m=>m.margenNetoPct),borderColor:'#e8873a',fill:true,backgroundColor:'rgba(232,135,58,0.1)',tension:0.3,pointRadius:5}]},options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{ticks:{callback:v=>v+'%'}}}}});
+    }, 50);
 
-            document.getElementById('kpiDashboard').innerHTML = `
-                <div class="kpi-card"><div class="kpi-label">Ventas Netas Acum.</div><div class="kpi-value">$${total.ventasNetasUSD.toLocaleString('en-US',{minimumFractionDigits:2})}</div></div>
-                <div class="kpi-card accent"><div class="kpi-label">Margen Bruto</div><div class="kpi-value">${margenBrutoPct.toFixed(2)}%</div></div>
-                <div class="kpi-card"><div class="kpi-label">Ratio Gastos/Ventas</div><div class="kpi-value">${ratioGastos.toFixed(2)}%</div></div>
-                <div class="kpi-card ${total.netoUSD>=0?'success':'danger'}"><div class="kpi-label">Margen Neto</div><div class="kpi-value">${margenNetoPct.toFixed(2)}%</div></div>
-            `;
-            document.getElementById('kpiDashboardComercial').innerHTML = `
-                <div class="kpi-card info"><div class="kpi-label">Total Visitas</div><div class="kpi-value">${total.totalVisitas}</div></div>
-                <div class="kpi-card info"><div class="kpi-label">Tasa Conv. Visitas→Presup.</div><div class="kpi-value">${tasaConvAnual.toFixed(1)}%</div></div>
-                <div class="kpi-card info"><div class="kpi-label">Tasa Aprobación</div><div class="kpi-value">${tasaAprobAnual.toFixed(1)}%</div></div>
-                <div class="kpi-card info"><div class="kpi-label">Tasa Cierre Valor</div><div class="kpi-value">${tasaCierreAnual.toFixed(1)}%</div></div>
-            `;
+    document.getElementById('tablaAnual').innerHTML = `<table><thead><tr><th>Concepto</th>${conDatos.map(m=>`<th>${m.mes}</th>`).join('')}<th>Total</th></tr></thead><tbody>
+        <tr><td>Ventas Netas</td>${conDatos.map(m=>`<td>${fmt(m.ventasNetasUSD)}</td>`).join('')}<td><strong>${fmt(tot.vn)}</strong></td></tr>
+        <tr><td>Costos</td>${conDatos.map(m=>`<td>${fmt(m.totalCostosUSD)}</td>`).join('')}<td><strong>${fmt(tot.tcos)}</strong></td></tr>
+        <tr><td>Margen Bruto</td>${conDatos.map(m=>`<td>${fmt(m.margenBrutoUSD)}</td>`).join('')}<td><strong>${fmt(tot.mb)}</strong></td></tr>
+        <tr><td>Gastos</td>${conDatos.map(m=>`<td>${fmt(m.totalGastosUSD)}</td>`).join('')}<td><strong>${fmt(tot.tg)}</strong></td></tr>
+        <tr class="highlight-row"><td>Neto</td>${conDatos.map(m=>`<td class="${m.netoUSD<0?'negative':''}">${fmt(m.netoUSD)}</td>`).join('')}<td><strong>${fmt(tot.n)}</strong></td></tr>
+    </tbody></table>`;
+}
 
-            const ctxPie = document.getElementById('chartPieVentas').getContext('2d');
-            if (window._chartPieVentas) window._chartPieVentas.destroy();
-            const totalHPS = datosMensuales.reduce((s, d) => s + (d.ventasHPSNetasUSD || 0), 0);
-            const totalImport = datosMensuales.reduce((s, d) => s + (d.ventasImportNetasUSD || 0), 0);
-            window._chartPieVentas = new Chart(ctxPie, { type: 'doughnut', data: { labels: ['Ventas HPS Netas', 'Ventas Import Netas'], datasets: [{ data: [totalHPS, totalImport], backgroundColor: ['#1a3c5e', '#e8873a'], borderWidth: 2, borderColor: '#fff' }] }, options: { responsive: true, plugins: { legend: { position: 'bottom' } } } });
+// ===========================
+// DASHBOARD KPIs
+// ===========================
+function renderDashboard() {
+    const ms = datosMensuales.map((d,i) => ({...calcularMes(d), mes:MESES[i]}));
+    const conDatos = ms.filter(m=>m.ventasBrutasUSD>0);
+    const tot = ms.reduce((a,m) => { a.vn+=m.ventasNetasUSD; a.mb+=m.margenBrutoUSD; a.tg+=m.totalGastosUSD; a.n+=m.netoUSD; a.tv+=m.totalVisitas; a.cp+=m.cantPresupuestos; a.ca+=m.cantAprobados; a.mp+=m.montoPresupuestadoUSD; a.vc+=m.valorCerradoUSD; return a; }, {vn:0,mb:0,tg:0,n:0,tv:0,cp:0,ca:0,mp:0,vc:0});
+    const mbp = tot.vn>0?tot.mb/tot.vn*100:0, mnp = tot.vn>0?tot.n/tot.vn*100:0, rg = tot.vn>0?tot.tg/tot.vn*100:0;
+    const tcv = tot.tv>0?tot.cp/tot.tv*100:0, tap = tot.cp>0?tot.ca/tot.cp*100:0, tcvl = tot.mp>0?tot.vc/tot.mp*100:0;
 
-            const ctxGastos = document.getElementById('chartGastosCat').getContext('2d');
-            if (window._chartGastosCat) window._chartGastosCat.destroy();
-            const nominaTotal = datosMensuales.reduce((s, d) => s + (d.nominaRD || 0), 0);
-            const viajesTotal = datosMensuales.reduce((s, d) => s + (d.viajesRD || 0), 0);
-            const cajaChicaTotal = datosMensuales.reduce((s, d) => s + (d.cajaChicaRD || 0), 0);
-            const eventosTotal = datosMensuales.reduce((s, d) => s + (d.eventosRD || 0), 0);
-            const otrosRDTotal = datosMensuales.reduce((s, d) => s + (d.correosRD || 0) + (d.seguroGuaguaRD || 0) + (d.combAlejandroRD || 0), 0);
-            window._chartGastosCat = new Chart(ctxGastos, { type: 'bar', data: { labels: ['Nómina', 'Viajes', 'Caja Chica', 'Eventos/Publicidad', 'Otros RD$'], datasets: [{ data: [nominaTotal, viajesTotal, cajaChicaTotal, eventosTotal, otrosRDTotal], backgroundColor: ['#1a3c5e', '#e8873a', '#2c5f8a', '#f4a261', '#5a7a9a'], borderRadius: 6 }] }, options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: v => 'RD$ ' + v.toLocaleString() } } } } });
+    document.getElementById('kpiDashboard').innerHTML = `
+        <div class="kpi-card"><div class="kpi-label">Ventas Netas Acum.</div><div class="kpi-value">$${fmt(tot.vn)}</div></div>
+        <div class="kpi-card accent"><div class="kpi-label">Margen Bruto</div><div class="kpi-value">${fmtP(mbp)}</div></div>
+        <div class="kpi-card"><div class="kpi-label">Ratio Gastos/Ventas</div><div class="kpi-value">${fmtP(rg)}</div></div>
+        <div class="kpi-card ${tot.n>=0?'success':'danger'}"><div class="kpi-label">Margen Neto</div><div class="kpi-value">${fmtP(mnp)}</div></div>`;
+    document.getElementById('kpiDashboardComercial').innerHTML = `
+        <div class="kpi-card info"><div class="kpi-label">Visitas</div><div class="kpi-value">${tot.tv}</div></div>
+        <div class="kpi-card info"><div class="kpi-label">Conv. Visitas→Presup.</div><div class="kpi-value">${fmtP(tcv)}</div></div>
+        <div class="kpi-card info"><div class="kpi-label">Tasa Aprobación</div><div class="kpi-value">${fmtP(tap)}</div></div>
+        <div class="kpi-card info"><div class="kpi-label">Cierre Valor</div><div class="kpi-value">${fmtP(tcvl)}</div></div>`;
 
-            const ctxBenef = document.getElementById('chartBeneficioNeto').getContext('2d');
-            if (window._chartBeneficioNeto) window._chartBeneficioNeto.destroy();
-            window._chartBeneficioNeto = new Chart(ctxBenef, { type: 'bar', data: { labels: MESES_NOMBRES, datasets: [{ data: mesesConDatos.map(m => m.netoUSD), backgroundColor: mesesConDatos.map(m => m.netoUSD >= 0 ? '#2e7d32' : '#c62828'), borderRadius: 6 }] }, options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: v => '$' + v.toLocaleString() } } } } });
+    const thps = datosMensuales.reduce((s,d)=>s+(d.ventasHPSNetasUSD||0),0);
+    const timp = datosMensuales.reduce((s,d)=>s+(d.ventasImportNetasUSD||0),0);
 
-            const ctxRatio = document.getElementById('chartRatioGastos').getContext('2d');
-            if (window._chartRatioGastos) window._chartRatioGastos.destroy();
-            window._chartRatioGastos = new Chart(ctxRatio, { type: 'line', data: { labels: MESES_NOMBRES, datasets: [{ data: mesesConDatos.map(m => m.ventasNetasUSD > 0 ? (m.totalGastosUSD / m.ventasNetasUSD * 100) : 0), borderColor: '#c62828', backgroundColor: 'rgba(198,40,40,0.08)', fill: true, tension: 0.3, pointRadius: 5, label: 'Gastos / Ventas %' }] }, options: { responsive: true, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true, ticks: { callback: v => v + '%' } } } } });
-        }
+    setTimeout(() => {
+        destroyChart('cPV'); _charts.cPV = new Chart(document.getElementById('chartPieVentas'),{type:'doughnut',data:{labels:['HPS','Import'],datasets:[{data:[thps,timp],backgroundColor:['#1a3c5e','#e8873a'],borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,plugins:{legend:{position:'bottom'}}}});
+        destroyChart('cGC');
+        const noms = datosMensuales.reduce((s,d)=>s+(d.nominaRD||0),0);
+        const viajs = datosMensuales.reduce((s,d)=>s+(d.viajesRD||0),0);
+        const cch = datosMensuales.reduce((s,d)=>s+(d.cajaChicaRD||0),0);
+        const evts = datosMensuales.reduce((s,d)=>s+(d.eventosRD||0),0);
+        _charts.cGC = new Chart(document.getElementById('chartGastosCat'),{type:'bar',data:{labels:['Nómina','Viajes','Caja Chica','Eventos','Otros'],datasets:[{data:[noms,viajs,cch,evts,0],backgroundColor:['#1a3c5e','#e8873a','#2c5f8a','#f4a261','#5a7a9a'],borderRadius:6}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'RD$ '+v.toLocaleString()}}}}});
+        destroyChart('cBN'); _charts.cBN = new Chart(document.getElementById('chartBeneficioNeto'),{type:'bar',data:{labels:conDatos.map(m=>m.mes),datasets:[{data:conDatos.map(m=>m.netoUSD),backgroundColor:conDatos.map(m=>m.netoUSD>=0?'#2e7d32':'#c62828'),borderRadius:6}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'$'+v.toLocaleString()}}}}});
+        destroyChart('cRG'); _charts.cRG = new Chart(document.getElementById('chartRatioGastos'),{type:'line',data:{labels:conDatos.map(m=>m.mes),datasets:[{data:conDatos.map(m=>m.ventasNetasUSD>0?m.totalGastosUSD/m.ventasNetasUSD*100:0),borderColor:'#c62828',backgroundColor:'rgba(198,40,40,0.08)',fill:true,tension:0.3,pointRadius:5,label:'Gastos/Ventas %'}]},options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{ticks:{callback:v=>v+'%'}}}}});
+    }, 50);
+}
 
-        function mostrarToast(msg) {
-            const existing = document.querySelector('.toast');
-            if (existing) existing.remove();
-            const t = document.createElement('div');
-            t.className = 'toast';
-            t.textContent = msg;
-            document.body.appendChild(t);
-            setTimeout(() => t.remove(), 2500);
-        }
-    </script>
+// ===========================
+// TOAST
+// ===========================
+function mostrarToast(msg) {
+    const old = document.querySelector('.toast');
+    if (old) old.remove();
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+}
+</script>
 </body>
 </html>
