@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Ventas 2026 | División HPS-Import </title>
+    <title>Dashboard de Ventas 2026 | División HPS-Import</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
     </script>
     <style>
@@ -46,6 +46,7 @@
         .btn-logout { background:none; border:1px solid rgba(255,255,255,0.3); color:#fff; padding:4px 10px; border-radius:12px; cursor:pointer; font-size:0.65rem; }
         .main { margin-left:var(--sidebar-w); flex:1; padding:28px 32px; max-width:1500px; }
         .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:12px; }
+        .badge { background:var(--accent); color:#fff; padding:6px 14px; border-radius:20px; font-size:0.78rem; font-weight:600; }
         .btn { padding:10px 22px; border-radius:25px; font-weight:600; font-size:0.85rem; cursor:pointer; border:none; font-family:var(--font); }
         .btn-print { background:#fff; border:2px solid var(--info); color:var(--info); }
         .btn-primary { background:var(--primary); color:#fff; }
@@ -57,6 +58,7 @@
         .kpi-card { background:#fff; border-radius:var(--radius); padding:20px; box-shadow:var(--shadow); border:1px solid var(--border); }
         .kpi-label { font-size:0.75rem; text-transform:uppercase; color:var(--text-secondary); font-weight:600; }
         .kpi-value { font-size:1.8rem; font-weight:700; color:var(--primary); }
+        .kpi-sub { font-size:0.78rem; color:var(--text-secondary); }
         .charts-row { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:24px; }
         @media (max-width:1000px) { .charts-row { grid-template-columns:1fr; } }
         .chart-card { background:#fff; border-radius:var(--radius); padding:20px; box-shadow:var(--shadow); border:1px solid var(--border); }
@@ -72,7 +74,12 @@
         th, td { padding:10px 12px; text-align:right; border-bottom:1px solid var(--border); }
         th { background:#f7f8fa; font-weight:700; color:var(--primary); font-size:0.7rem; }
         td:first-child, th:first-child { text-align:left; font-weight:600; }
+        .toast { position:fixed; bottom:28px; right:28px; background:var(--success); color:#fff; padding:12px 22px; border-radius:25px; font-weight:600; font-size:0.85rem; box-shadow:0 4px 12px rgba(0,0,0,0.2); z-index:999; animation:slideUp 0.35s ease; }
+        @keyframes slideUp { from { transform:translateY(60px); opacity:0; } to { transform:translateY(0); opacity:1; } }
         @media print { .sidebar, .btn, .toast, .no-print { display:none!important; } .main { margin-left:0!important; padding:10px!important; } }
+        .sync-indicator { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; }
+        .sync-ok { background:#2e7d32; } .sync-pending { background:#f9a825; animation:pulse 1s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
     </style>
 </head>
 <body>
@@ -90,7 +97,6 @@
 
     <aside class="sidebar no-print" id="sidebar" style="display:none;">
         <div class="sidebar-header"><h2>DIVISIÓN ARBOLEDA<br>HPS-IMPORT</h2></div>
-        <div class="subtitle">Dashboard de Ventas 2026</div>
         <nav class="sidebar-nav">
             <div class="nav-section">Mensual</div>
             <button data-view="monthly" data-month="0">Enero</button>
@@ -109,7 +115,10 @@
             <button data-view="annual">Total Anual</button>
             <button data-view="dashboard">Dashboard KPIs</button>
         </nav>
-        <div class="sidebar-footer"><span id="loggedUserLabel"></span><button class="btn-logout" onclick="cerrarSesion()">Salir</button></div>
+        <div class="sidebar-footer">
+            <span id="loggedUserLabel"></span>
+            <span style="display:flex;align-items:center;gap:4px;"><span class="sync-indicator sync-ok" id="syncDot"></span><button class="btn-logout" onclick="cerrarSesion()">Salir</button></span>
+        </div>
     </aside>
 
     <main class="main" id="mainContent" style="display:none;">
@@ -123,8 +132,8 @@
                     <div class="form-group"><label>Tipo</label><select id="txTipo"><option value="HPS">HPS</option><option value="IMPORT">IMPORT</option></select></div>
                     <div class="form-group"><label>Presupuesto</label><input type="text" id="txPresupuesto"></div>
                     <div class="form-group"><label>I. Neto (USD)</label><input type="number" id="txNeto" step="0.01" onchange="calcularBruto()"></div>
-                    <div class="form-group"><label>Impuesto (USD)</label><input type="number" id="txImpuesto" step="0.01" readonly></div>
-                    <div class="form-group"><label>I. Bruto (USD)</label><input type="number" id="txBruto" step="0.01" readonly></div>
+                    <div class="form-group"><label>Impuesto (USD)</label><input type="number" id="txImpuesto" step="0.01" readonly=""></div>
+                    <div class="form-group"><label>I. Bruto (USD)</label><input type="number" id="txBruto" step="0.01" readonly=""></div>
                     <div class="form-group"><label>Servicio/Producto</label><select id="txServProd"><option value="S">Servicio (S)</option><option value="P">Producto (P)</option></select></div>
                     <div class="form-group"><label>Estatus</label><select id="txEstatus"><option value="APROBADO">APROBADO</option><option value="NO APROBADO">NO APROBADO</option></select></div>
                 </div>
@@ -157,86 +166,139 @@
     </main>
 
     <script>
+        // ⚙️ CONFIGURACIÓN JSONBIN.IO
+        const JSONBIN_API_KEY = '$2a$10$b9o.f47WPvbdYcpPTAYaheNddQDe3H6iaPlcnAfffDDkBBm6x3VHS';
+        const JSONBIN_BIN_ID = '6a03d043adc21f119a905c9d';
+
         window.imprimirVista = function() { window.print(); };
         const USUARIOS = { 'admin': { password: 'admin123', rol: 'admin', nombre: 'Administrador' }, 'gerente': { password: 'gerente123', rol: 'admin', nombre: 'Gerente' }, 'invitado': { password: 'invitado', rol: 'invitado', nombre: 'Invitado' } };
         let usuarioActual = null;
         const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
         const META_ANUAL = 1250000;
         const META_MENSUAL = META_ANUAL / 12;
-        const STORAGE_KEY_TRANS = 'ventas_2026_transacciones';
         let transacciones = [];
         let currentMonth = 0;
+        let nextId = Date.now();
 
-        function inicializarDatos() {
-            const saved = localStorage.getItem(STORAGE_KEY_TRANS);
-            if (saved) { transacciones = JSON.parse(saved); }
-            else { precargarTransacciones(); }
+        // --- PERSISTENCIA JSONBIN ---
+        async function cargarDatosRemotos() {
+            try {
+                const resp = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest?ts=${Date.now()}`, {
+                    headers: { 'X-Master-Key': JSONBIN_API_KEY }
+                });
+                if (!resp.ok) throw new Error('Error al cargar datos remotos');
+                const data = await resp.json();
+                let arr = (data.record && data.record.data) ? data.record.data : (Array.isArray(data.record) ? data.record : []);
+                if (!Array.isArray(arr)) arr = [];
+                transacciones = arr;
+                // Asignar IDs a registros que no tengan
+                transacciones.forEach(t => { if (!t.id) t.id = nextId++; });
+                if (transacciones.length > 0) {
+                    const maxId = Math.max(...transacciones.map(t => t.id || 0));
+                    if (maxId >= nextId) nextId = maxId + 1;
+                }
+                actualizarIndicadorSync(true);
+                return true;
+            } catch (error) {
+                console.warn('Cargando respaldo local:', error.message);
+                actualizarIndicadorSync(false);
+                return false;
+            }
         }
+
+        async function guardarDatosRemotos() {
+            try {
+                const resp = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY },
+                    body: JSON.stringify({ data: transacciones })
+                });
+                if (!resp.ok) throw new Error('Error al guardar datos remotos');
+                actualizarIndicadorSync(true);
+                return true;
+            } catch (error) {
+                console.error('Error al guardar en la nube:', error.message);
+                actualizarIndicadorSync(false);
+                mostrarToast('⚠️ Sin conexión al servidor. Cambios guardados localmente.');
+                return false;
+            }
+        }
+
+        function actualizarIndicadorSync(ok) {
+            const dot = document.getElementById('syncDot');
+            if (dot) { dot.className = 'sync-indicator ' + (ok ? 'sync-ok' : 'sync-pending'); dot.title = ok ? 'Sincronizado' : 'Sin conexión'; }
+        }
+
+        async function inicializarDatos() {
+            const exito = await cargarDatosRemotos();
+            if (!exito || !Array.isArray(transacciones) || transacciones.length === 0) {
+                precargarTransacciones();
+                await guardarDatosRemotos();
+            }
+        }
+
         function precargarTransacciones() {
-            // Datos extraídos del archivo (ENERO a ABRIL aprobados + algunos no aprobados)
             transacciones = [
-                { fecha: '2026-01-06', mes: 0, cliente: 'HOTEL OCEAN FRONT', tipo: 'HPS', presupuesto: '23006008', neto: 679.99, impuesto: 122.40, bruto: 802.39, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-06', mes: 0, cliente: 'HOTEL CASA MARINA REEF', tipo: 'HPS', presupuesto: '23005826', neto: 1434.00, impuesto: 258.12, bruto: 1692.12, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-06', mes: 0, cliente: 'HOTEL SECRETS CAP CANA', tipo: 'HPS', presupuesto: '23006044', neto: 550.80, impuesto: 99.14, bruto: 649.94, servProd: 'S', estatus: 'APROBADO' },
-                { fecha: '2026-01-06', mes: 0, cliente: 'HOTEL SENATOR PUERTO PLATA', tipo: 'HPS', presupuesto: '23006045', neto: 447.93, impuesto: 80.63, bruto: 528.56, servProd: 'S', estatus: 'APROBADO' },
-                { fecha: '2026-01-06', mes: 0, cliente: 'HOTEL EL BARCO', tipo: 'HPS', presupuesto: '23006048', neto: 672.80, impuesto: 121.10, bruto: 793.90, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-06', mes: 0, cliente: 'HOTEL KIMPTON LAS MERCEDES', tipo: 'HPS', presupuesto: '23006053', neto: 3430.00, impuesto: 617.40, bruto: 4047.40, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-06', mes: 0, cliente: 'HOTEL W PUNTA CANA', tipo: 'HPS', presupuesto: '23005245', neto: 3000.00, impuesto: 540.00, bruto: 3540.00, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-06', mes: 0, cliente: 'VIVA INTERNATIONAL', tipo: 'HPS', presupuesto: '23006026', neto: 95.00, impuesto: 17.10, bruto: 112.10, servProd: 'S', estatus: 'APROBADO' },
-                { fecha: '2026-01-07', mes: 0, cliente: 'HOTEL W PUNTA CANA', tipo: 'HPS', presupuesto: '23006061', neto: 475.00, impuesto: 85.50, bruto: 560.50, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-07', mes: 0, cliente: 'HOTEL W PUNTA CANA', tipo: 'HPS', presupuesto: '23006062', neto: 573.14, impuesto: 103.17, bruto: 676.31, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-07', mes: 0, cliente: 'HOTEL HARD ROCK PUNTA CANA', tipo: 'HPS', presupuesto: '23005927', neto: 17126.00, impuesto: 3082.68, bruto: 20208.68, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-13', mes: 0, cliente: 'HOTEL ZEMI MICHES', tipo: 'HPS', presupuesto: '23006072', neto: 752.00, impuesto: 135.36, bruto: 887.36, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-13', mes: 0, cliente: 'HACIENDA SAMANA BAY', tipo: 'HPS', presupuesto: '23006073', neto: 249.00, impuesto: 44.82, bruto: 293.82, servProd: 'S', estatus: 'APROBADO' },
-                { fecha: '2026-01-14', mes: 0, cliente: 'HOTEL OCEAN BLUE AND SAND', tipo: 'HPS', presupuesto: '23006074', neto: 1039.49, impuesto: 187.11, bruto: 1226.60, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-14', mes: 0, cliente: 'HOTEL SECRETS AND DREAMS MICHES', tipo: 'HPS', presupuesto: '23006109', neto: 134.28, impuesto: 24.17, bruto: 158.45, servProd: 'S', estatus: 'APROBADO' },
-                { fecha: '2026-01-14', mes: 0, cliente: 'HOTEL SECRETS AND DREAMS MICHES', tipo: 'HPS', presupuesto: '23006108', neto: 205.00, impuesto: 36.90, bruto: 241.90, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-14', mes: 0, cliente: 'HOTEL SECRETS AND DREAMS MICHES', tipo: 'HPS', presupuesto: '23006107', neto: 3357.00, impuesto: 604.26, bruto: 3961.26, servProd: 'S', estatus: 'APROBADO' },
-                { fecha: '2026-01-14', mes: 0, cliente: 'HOTEL SECRETS AND DREAMS MICHES', tipo: 'HPS', presupuesto: '23006103', neto: 5125.00, impuesto: 922.50, bruto: 6047.50, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-15', mes: 0, cliente: 'HOTEL SENATOR PUERTO PLATA', tipo: 'HPS', presupuesto: '23006064', neto: 1290.00, impuesto: 232.20, bruto: 1522.20, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-15', mes: 0, cliente: 'HOTEL SENATOR PUERTO PLATA', tipo: 'HPS', presupuesto: '23006063', neto: 3390.54, impuesto: 610.30, bruto: 4000.84, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-19', mes: 0, cliente: 'HOTEL BARCELO BAVARO', tipo: 'HPS', presupuesto: '23006133', neto: 302.47, impuesto: 54.44, bruto: 356.91, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-19', mes: 0, cliente: 'HOTEL SPORTS ILLUSTRATED', tipo: 'HPS', presupuesto: '23006124', neto: 768.00, impuesto: 138.24, bruto: 906.24, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-20', mes: 0, cliente: 'HOTEL CASA MARINA REEF', tipo: 'HPS', presupuesto: '23006128', neto: 8235.25, impuesto: 1482.34, bruto: 9717.59, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-22', mes: 0, cliente: 'VIVA INTERNATIONAL', tipo: 'HPS', presupuesto: '23006059', neto: 145.65, impuesto: 26.22, bruto: 171.87, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-27', mes: 0, cliente: 'HOTEL ALOFT Y MARRIOTT', tipo: 'HPS', presupuesto: '23006156', neto: 474.00, impuesto: 85.32, bruto: 559.32, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-28', mes: 0, cliente: 'HOTEL SENATOR PUERTO PLATA', tipo: 'HPS', presupuesto: '23006113', neto: 630.95, impuesto: 113.57, bruto: 744.52, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-28', mes: 0, cliente: 'HOTEL SECRETS AND DREAMS MICHES', tipo: 'HPS', presupuesto: '23006009', neto: 8482.00, impuesto: 1526.76, bruto: 10008.76, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-28', mes: 0, cliente: 'HOTEL EL BARCO', tipo: 'HPS', presupuesto: '23006162', neto: 95.00, impuesto: 17.10, bruto: 112.10, servProd: 'S', estatus: 'APROBADO' },
-                { fecha: '2026-01-30', mes: 0, cliente: 'HOTEL HARD ROCK PUNTA CANA', tipo: 'HPS', presupuesto: '23005376', neto: 348.42, impuesto: 62.71, bruto: 411.13, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-30', mes: 0, cliente: 'HOTEL BILLINI', tipo: 'HPS', presupuesto: '23006172', neto: 256.00, impuesto: 46.08, bruto: 302.08, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-30', mes: 0, cliente: 'HOTEL WYNDHAM ALLTRA SAMANA', tipo: 'HPS', presupuesto: '23006157', neto: 1280.00, impuesto: 230.40, bruto: 1510.40, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-30', mes: 0, cliente: 'CASA ARQUIDIOCESANA MARIA DE LA ALT.', tipo: 'HPS', presupuesto: '23006144', neto: 1783.53, impuesto: 321.04, bruto: 2104.57, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-30', mes: 0, cliente: 'CASA ARQUIDIOCESANA MARIA DE LA ALT.', tipo: 'HPS', presupuesto: '23006145', neto: 297.24, impuesto: 53.50, bruto: 350.74, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-06', mes: 0, cliente: 'DOMINICAN DEVELOPMENT', tipo: 'IMPORT', presupuesto: '23005962', neto: 1223.79, impuesto: 220.28, bruto: 1444.07, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-06', mes: 0, cliente: 'CONSTRUCTORA JOHANN REYES M.', tipo: 'IMPORT', presupuesto: '23005947', neto: 2367.08, impuesto: 426.08, bruto: 2793.16, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-13', mes: 0, cliente: 'GRUPO ARHE SRL', tipo: 'IMPORT', presupuesto: '23005633', neto: 2565.70, impuesto: 461.83, bruto: 3027.53, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-22', mes: 0, cliente: 'GLOBAL SPACE TRADING', tipo: 'IMPORT', presupuesto: '23006139', neto: 1323.19, impuesto: 238.17, bruto: 1561.36, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-22', mes: 0, cliente: 'CONSTRUCTORA DOVARCO', tipo: 'IMPORT', presupuesto: '23006149', neto: 130.11, impuesto: 23.42, bruto: 153.53, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-27', mes: 0, cliente: 'ATLAMBAR MANAGEMENT', tipo: 'IMPORT', presupuesto: '23006150', neto: 19823.19, impuesto: 3568.17, bruto: 23391.36, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-28', mes: 0, cliente: 'PANTALEON SALCEDO', tipo: 'IMPORT', presupuesto: '23005918', neto: 42905.95, impuesto: 7723.07, bruto: 50629.02, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-01-30', mes: 0, cliente: 'ALIBEY DEL CARIBE', tipo: 'IMPORT', presupuesto: '23003813', neto: 173.28, impuesto: 31.19, bruto: 204.47, servProd: 'P', estatus: 'APROBADO' },
-                // Febrero (abreviado)
-                { fecha: '2026-02-02', mes: 1, cliente: 'HOTEL SECRETS CAP CANA', tipo: 'HPS', presupuesto: '23006215', neto: 550.80, impuesto: 99.14, bruto: 649.94, servProd: 'S', estatus: 'APROBADO' },
-                { fecha: '2026-02-02', mes: 1, cliente: 'HOTEL SENATOR PUERTO PLATA', tipo: 'HPS', presupuesto: '23006216', neto: 447.93, impuesto: 80.63, bruto: 528.56, servProd: 'S', estatus: 'APROBADO' },
-                { fecha: '2026-02-02', mes: 1, cliente: 'HOTEL BILLINI', tipo: 'HPS', presupuesto: '23006220', neto: 1374.62, impuesto: 247.43, bruto: 1622.05, servProd: 'S', estatus: 'APROBADO' },
-                { fecha: '2026-02-03', mes: 1, cliente: 'HOTEL BREATHLESS PUNTA CANA', tipo: 'HPS', presupuesto: '23006211', neto: 7919.99, impuesto: 1425.60, bruto: 9345.59, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-02-04', mes: 1, cliente: 'HOTEL W PUNTA CANA', tipo: 'HPS', presupuesto: '23006235', neto: 3494.20, impuesto: 628.96, bruto: 4123.16, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-02-13', mes: 1, cliente: 'CONSTRUCTORA DOVARCO', tipo: 'IMPORT', presupuesto: '23006248', neto: 4037.86, impuesto: 726.81, bruto: 4764.67, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-02-23', mes: 1, cliente: 'ING360 SRL', tipo: 'IMPORT', presupuesto: '23006308', neto: 600.13, impuesto: 108.02, bruto: 708.15, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-02-24', mes: 1, cliente: 'CONSTRUCTORA AYBAR', tipo: 'IMPORT', presupuesto: '23006251', neto: 5144.19, impuesto: 925.95, bruto: 6070.14, servProd: 'P', estatus: 'APROBADO' },
-                // Marzo (abreviado)
-                { fecha: '2026-03-01', mes: 2, cliente: 'HOTEL DREAMS MACAO', tipo: 'HPS', presupuesto: '23006335', neto: 1280.00, impuesto: 230.40, bruto: 1510.40, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-03-04', mes: 2, cliente: 'HABITA GROUP GDC', tipo: 'IMPORT', presupuesto: '23006296', neto: 1571.47, impuesto: 282.86, bruto: 1854.33, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-03-13', mes: 2, cliente: 'INVERSIONES ABEY', tipo: 'IMPORT', presupuesto: '23006431', neto: 36687.57, impuesto: 6603.76, bruto: 43291.33, servProd: 'P', estatus: 'APROBADO' },
-                // Abril (algunos)
-                { fecha: '2026-04-01', mes: 3, cliente: 'HOTEL COURTYARD MAXIMO GOMEZ', tipo: 'HPS', presupuesto: '23006492', neto: 263.73, impuesto: 47.47, bruto: 311.20, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-04-14', mes: 3, cliente: 'ATLAMBAR MANEGEMENT', tipo: 'IMPORT', presupuesto: '23006562', neto: 6954.54, impuesto: 1251.82, bruto: 8206.36, servProd: 'P', estatus: 'APROBADO' },
-                { fecha: '2026-04-15', mes: 3, cliente: 'SANS SOUCI PORTS', tipo: 'IMPORT', presupuesto: '23006417', neto: 6871.18, impuesto: 1236.81, bruto: 8107.99, servProd: 'P', estatus: 'APROBADO' }
+                { id: nextId++, fecha: '2026-01-06', mes: 0, cliente: 'HOTEL OCEAN FRONT', tipo: 'HPS', presupuesto: '23006008', neto: 679.99, impuesto: 122.40, bruto: 802.39, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-06', mes: 0, cliente: 'HOTEL CASA MARINA REEF', tipo: 'HPS', presupuesto: '23005826', neto: 1434.00, impuesto: 258.12, bruto: 1692.12, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-06', mes: 0, cliente: 'HOTEL SECRETS CAP CANA', tipo: 'HPS', presupuesto: '23006044', neto: 550.80, impuesto: 99.14, bruto: 649.94, servProd: 'S', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-06', mes: 0, cliente: 'HOTEL SENATOR PUERTO PLATA', tipo: 'HPS', presupuesto: '23006045', neto: 447.93, impuesto: 80.63, bruto: 528.56, servProd: 'S', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-06', mes: 0, cliente: 'HOTEL EL BARCO', tipo: 'HPS', presupuesto: '23006048', neto: 672.80, impuesto: 121.10, bruto: 793.90, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-06', mes: 0, cliente: 'HOTEL KIMPTON LAS MERCEDES', tipo: 'HPS', presupuesto: '23006053', neto: 3430.00, impuesto: 617.40, bruto: 4047.40, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-06', mes: 0, cliente: 'HOTEL W PUNTA CANA', tipo: 'HPS', presupuesto: '23005245', neto: 3000.00, impuesto: 540.00, bruto: 3540.00, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-06', mes: 0, cliente: 'VIVA INTERNATIONAL', tipo: 'HPS', presupuesto: '23006026', neto: 95.00, impuesto: 17.10, bruto: 112.10, servProd: 'S', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-07', mes: 0, cliente: 'HOTEL W PUNTA CANA', tipo: 'HPS', presupuesto: '23006061', neto: 475.00, impuesto: 85.50, bruto: 560.50, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-07', mes: 0, cliente: 'HOTEL W PUNTA CANA', tipo: 'HPS', presupuesto: '23006062', neto: 573.14, impuesto: 103.17, bruto: 676.31, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-07', mes: 0, cliente: 'HOTEL HARD ROCK PUNTA CANA', tipo: 'HPS', presupuesto: '23005927', neto: 17126.00, impuesto: 3082.68, bruto: 20208.68, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-13', mes: 0, cliente: 'HOTEL ZEMI MICHES', tipo: 'HPS', presupuesto: '23006072', neto: 752.00, impuesto: 135.36, bruto: 887.36, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-13', mes: 0, cliente: 'HACIENDA SAMANA BAY', tipo: 'HPS', presupuesto: '23006073', neto: 249.00, impuesto: 44.82, bruto: 293.82, servProd: 'S', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-14', mes: 0, cliente: 'HOTEL OCEAN BLUE AND SAND', tipo: 'HPS', presupuesto: '23006074', neto: 1039.49, impuesto: 187.11, bruto: 1226.60, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-14', mes: 0, cliente: 'HOTEL SECRETS AND DREAMS MICHES', tipo: 'HPS', presupuesto: '23006109', neto: 134.28, impuesto: 24.17, bruto: 158.45, servProd: 'S', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-14', mes: 0, cliente: 'HOTEL SECRETS AND DREAMS MICHES', tipo: 'HPS', presupuesto: '23006108', neto: 205.00, impuesto: 36.90, bruto: 241.90, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-14', mes: 0, cliente: 'HOTEL SECRETS AND DREAMS MICHES', tipo: 'HPS', presupuesto: '23006107', neto: 3357.00, impuesto: 604.26, bruto: 3961.26, servProd: 'S', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-14', mes: 0, cliente: 'HOTEL SECRETS AND DREAMS MICHES', tipo: 'HPS', presupuesto: '23006103', neto: 5125.00, impuesto: 922.50, bruto: 6047.50, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-15', mes: 0, cliente: 'HOTEL SENATOR PUERTO PLATA', tipo: 'HPS', presupuesto: '23006064', neto: 1290.00, impuesto: 232.20, bruto: 1522.20, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-15', mes: 0, cliente: 'HOTEL SENATOR PUERTO PLATA', tipo: 'HPS', presupuesto: '23006063', neto: 3390.54, impuesto: 610.30, bruto: 4000.84, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-19', mes: 0, cliente: 'HOTEL BARCELO BAVARO', tipo: 'HPS', presupuesto: '23006133', neto: 302.47, impuesto: 54.44, bruto: 356.91, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-19', mes: 0, cliente: 'HOTEL SPORTS ILLUSTRATED', tipo: 'HPS', presupuesto: '23006124', neto: 768.00, impuesto: 138.24, bruto: 906.24, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-20', mes: 0, cliente: 'HOTEL CASA MARINA REEF', tipo: 'HPS', presupuesto: '23006128', neto: 8235.25, impuesto: 1482.34, bruto: 9717.59, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-22', mes: 0, cliente: 'VIVA INTERNATIONAL', tipo: 'HPS', presupuesto: '23006059', neto: 145.65, impuesto: 26.22, bruto: 171.87, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-27', mes: 0, cliente: 'HOTEL ALOFT Y MARRIOTT', tipo: 'HPS', presupuesto: '23006156', neto: 474.00, impuesto: 85.32, bruto: 559.32, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-28', mes: 0, cliente: 'HOTEL SENATOR PUERTO PLATA', tipo: 'HPS', presupuesto: '23006113', neto: 630.95, impuesto: 113.57, bruto: 744.52, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-28', mes: 0, cliente: 'HOTEL SECRETS AND DREAMS MICHES', tipo: 'HPS', presupuesto: '23006009', neto: 8482.00, impuesto: 1526.76, bruto: 10008.76, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-28', mes: 0, cliente: 'HOTEL EL BARCO', tipo: 'HPS', presupuesto: '23006162', neto: 95.00, impuesto: 17.10, bruto: 112.10, servProd: 'S', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-30', mes: 0, cliente: 'HOTEL HARD ROCK PUNTA CANA', tipo: 'HPS', presupuesto: '23005376', neto: 348.42, impuesto: 62.71, bruto: 411.13, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-30', mes: 0, cliente: 'HOTEL BILLINI', tipo: 'HPS', presupuesto: '23006172', neto: 256.00, impuesto: 46.08, bruto: 302.08, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-30', mes: 0, cliente: 'HOTEL WYNDHAM ALLTRA SAMANA', tipo: 'HPS', presupuesto: '23006157', neto: 1280.00, impuesto: 230.40, bruto: 1510.40, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-30', mes: 0, cliente: 'CASA ARQUIDIOCESANA MARIA DE LA ALT.', tipo: 'HPS', presupuesto: '23006144', neto: 1783.53, impuesto: 321.04, bruto: 2104.57, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-30', mes: 0, cliente: 'CASA ARQUIDIOCESANA MARIA DE LA ALT.', tipo: 'HPS', presupuesto: '23006145', neto: 297.24, impuesto: 53.50, bruto: 350.74, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-06', mes: 0, cliente: 'DOMINICAN DEVELOPMENT', tipo: 'IMPORT', presupuesto: '23005962', neto: 1223.79, impuesto: 220.28, bruto: 1444.07, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-06', mes: 0, cliente: 'CONSTRUCTORA JOHANN REYES M.', tipo: 'IMPORT', presupuesto: '23005947', neto: 2367.08, impuesto: 426.08, bruto: 2793.16, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-13', mes: 0, cliente: 'GRUPO ARHE SRL', tipo: 'IMPORT', presupuesto: '23005633', neto: 2565.70, impuesto: 461.83, bruto: 3027.53, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-22', mes: 0, cliente: 'GLOBAL SPACE TRADING', tipo: 'IMPORT', presupuesto: '23006139', neto: 1323.19, impuesto: 238.17, bruto: 1561.36, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-22', mes: 0, cliente: 'CONSTRUCTORA DOVARCO', tipo: 'IMPORT', presupuesto: '23006149', neto: 130.11, impuesto: 23.42, bruto: 153.53, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-27', mes: 0, cliente: 'ATLAMBAR MANAGEMENT', tipo: 'IMPORT', presupuesto: '23006150', neto: 19823.19, impuesto: 3568.17, bruto: 23391.36, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-28', mes: 0, cliente: 'PANTALEON SALCEDO', tipo: 'IMPORT', presupuesto: '23005918', neto: 42905.95, impuesto: 7723.07, bruto: 50629.02, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-01-30', mes: 0, cliente: 'ALIBEY DEL CARIBE', tipo: 'IMPORT', presupuesto: '23003813', neto: 173.28, impuesto: 31.19, bruto: 204.47, servProd: 'P', estatus: 'APROBADO' },
+                // Febrero
+                { id: nextId++, fecha: '2026-02-02', mes: 1, cliente: 'HOTEL SECRETS CAP CANA', tipo: 'HPS', presupuesto: '23006215', neto: 550.80, impuesto: 99.14, bruto: 649.94, servProd: 'S', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-02-02', mes: 1, cliente: 'HOTEL SENATOR PUERTO PLATA', tipo: 'HPS', presupuesto: '23006216', neto: 447.93, impuesto: 80.63, bruto: 528.56, servProd: 'S', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-02-02', mes: 1, cliente: 'HOTEL BILLINI', tipo: 'HPS', presupuesto: '23006220', neto: 1374.62, impuesto: 247.43, bruto: 1622.05, servProd: 'S', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-02-03', mes: 1, cliente: 'HOTEL BREATHLESS PUNTA CANA', tipo: 'HPS', presupuesto: '23006211', neto: 7919.99, impuesto: 1425.60, bruto: 9345.59, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-02-04', mes: 1, cliente: 'HOTEL W PUNTA CANA', tipo: 'HPS', presupuesto: '23006235', neto: 3494.20, impuesto: 628.96, bruto: 4123.16, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-02-13', mes: 1, cliente: 'CONSTRUCTORA DOVARCO', tipo: 'IMPORT', presupuesto: '23006248', neto: 4037.86, impuesto: 726.81, bruto: 4764.67, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-02-23', mes: 1, cliente: 'ING360 SRL', tipo: 'IMPORT', presupuesto: '23006308', neto: 600.13, impuesto: 108.02, bruto: 708.15, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-02-24', mes: 1, cliente: 'CONSTRUCTORA AYBAR', tipo: 'IMPORT', presupuesto: '23006251', neto: 5144.19, impuesto: 925.95, bruto: 6070.14, servProd: 'P', estatus: 'APROBADO' },
+                // Marzo
+                { id: nextId++, fecha: '2026-03-01', mes: 2, cliente: 'HOTEL DREAMS MACAO', tipo: 'HPS', presupuesto: '23006335', neto: 1280.00, impuesto: 230.40, bruto: 1510.40, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-03-04', mes: 2, cliente: 'HABITA GROUP GDC', tipo: 'IMPORT', presupuesto: '23006296', neto: 1571.47, impuesto: 282.86, bruto: 1854.33, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-03-13', mes: 2, cliente: 'INVERSIONES ABEY', tipo: 'IMPORT', presupuesto: '23006431', neto: 36687.57, impuesto: 6603.76, bruto: 43291.33, servProd: 'P', estatus: 'APROBADO' },
+                // Abril
+                { id: nextId++, fecha: '2026-04-01', mes: 3, cliente: 'HOTEL COURTYARD MAXIMO GOMEZ', tipo: 'HPS', presupuesto: '23006492', neto: 263.73, impuesto: 47.47, bruto: 311.20, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-04-14', mes: 3, cliente: 'ATLAMBAR MANEGEMENT', tipo: 'IMPORT', presupuesto: '23006562', neto: 6954.54, impuesto: 1251.82, bruto: 8206.36, servProd: 'P', estatus: 'APROBADO' },
+                { id: nextId++, fecha: '2026-04-15', mes: 3, cliente: 'SANS SOUCI PORTS', tipo: 'IMPORT', presupuesto: '23006417', neto: 6871.18, impuesto: 1236.81, bruto: 8107.99, servProd: 'P', estatus: 'APROBADO' }
             ];
-            guardarTransacciones();
         }
-        function guardarTransacciones() { localStorage.setItem(STORAGE_KEY_TRANS, JSON.stringify(transacciones)); }
 
         function filtrarPorMes(mes) { return transacciones.filter(t => t.mes === mes); }
         function calcularKPIsMes(mes) {
@@ -299,36 +361,43 @@
             const imp = aprobadas.filter(t => t.tipo === 'IMPORT');
             if (window._chartHPSImport) window._chartHPSImport.destroy();
             window._chartHPSImport = new Chart(ctx2, { type: 'pie', data: { labels: ['HPS','IMPORT'], datasets: [{ data: [hps.length, imp.length], backgroundColor: ['#2c5f8a','#f4a261'] }] }, options: { responsive: true } });
-            // Tabla de transacciones
             const todas = filtrarPorMes(mes);
             let html = `<table><tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Presupuesto</th><th>Neto</th><th>Bruto</th><th>S/P</th><th>Estatus</th>${esAdmin?'<th></th>':''}</tr>`;
-            todas.forEach((t, i) => {
+            todas.forEach(t => {
                 html += `<tr>
                     <td>${t.fecha}</td><td>${t.cliente}</td><td>${t.tipo}</td><td>${t.presupuesto}</td><td>$${t.neto.toFixed(2)}</td><td>$${t.bruto.toFixed(2)}</td><td>${t.servProd}</td><td>${t.estatus}</td>
-                    ${esAdmin?`<td><button class="btn btn-sm" style="background:#c62828;color:#fff;" onclick="eliminarTransaccion(${i})">X</button></td>`:''}
+                    ${esAdmin?`<td><button class="btn btn-sm" style="background:#c62828;color:#fff;" onclick="eliminarTransaccion(${t.id})">X</button></td>`:''}
                 </tr>`;
             });
             html += '</table>';
             document.getElementById('tablaTransacciones').innerHTML = html;
         }
 
-        window.eliminarTransaccion = function(index) {
+        window.eliminarTransaccion = async function(id) {
             if (!usuarioActual || usuarioActual.rol !== 'admin') return;
+            const idNum = Number(id);
+            const index = transacciones.findIndex(t => t.id === idNum);
+            if (index === -1) { mostrarToast('❌ No se pudo eliminar: ID no encontrado.'); return; }
             transacciones.splice(index, 1);
-            guardarTransacciones();
+            const guardado = await guardarDatosRemotos();
+            if (!guardado) { mostrarToast('❌ No se pudo eliminar en el servidor. Reintente.'); return; }
             renderizarMes(currentMonth);
+            mostrarToast('🗑️ Transacción eliminada');
         };
+
         window.calcularBruto = function() {
             const neto = parseFloat(document.getElementById('txNeto').value) || 0;
             document.getElementById('txImpuesto').value = (neto * 0.18).toFixed(2);
             document.getElementById('txBruto').value = (neto * 1.18).toFixed(2);
         };
-        window.guardarTransaccion = function() {
+
+        window.guardarTransaccion = async function() {
             if (!usuarioActual || usuarioActual.rol !== 'admin') return;
             const fecha = document.getElementById('txFecha').value;
             const mes = new Date(fecha + 'T00:00:00').getMonth();
             const nueva = {
-                fecha, mes, cliente: document.getElementById('txCliente').value,
+                id: nextId++, fecha, mes,
+                cliente: document.getElementById('txCliente').value,
                 tipo: document.getElementById('txTipo').value,
                 presupuesto: document.getElementById('txPresupuesto').value,
                 neto: parseFloat(document.getElementById('txNeto').value) || 0,
@@ -338,14 +407,19 @@
                 estatus: document.getElementById('txEstatus').value
             };
             transacciones.push(nueva);
-            guardarTransacciones();
+            await guardarDatosRemotos();
             renderizarMes(currentMonth);
             limpiarFormulario();
+            mostrarToast('✅ Transacción guardada');
         };
+
         window.limpiarFormulario = function() {
-            document.getElementById('txFecha').value = ''; document.getElementById('txCliente').value = '';
-            document.getElementById('txPresupuesto').value = ''; document.getElementById('txNeto').value = '';
-            document.getElementById('txImpuesto').value = ''; document.getElementById('txBruto').value = '';
+            document.getElementById('txFecha').value = '';
+            document.getElementById('txCliente').value = '';
+            document.getElementById('txPresupuesto').value = '';
+            document.getElementById('txNeto').value = '';
+            document.getElementById('txImpuesto').value = '';
+            document.getElementById('txBruto').value = '';
         };
 
         function renderizarAnual() {
@@ -371,10 +445,9 @@
             const ctx2 = document.getElementById('chartHPSImportAnual').getContext('2d');
             if (window._chartHPSImportAnual) window._chartHPSImportAnual.destroy();
             window._chartHPSImportAnual = new Chart(ctx2, { type: 'doughnut', data: { labels: ['HPS','IMPORT'], datasets: [{ data: [cantHPS, cantIMP], backgroundColor: ['#2c5f8a','#f4a261'] }] }, options: { responsive: true } });
-            // Top clientes
-            const sorted = Object.entries(clientes).sort((a, b) => b[1] - a[1]).slice(0, 10);
+            const sorted = Object.entries(clientes).sort((a,b)=>b[1]-a[1]).slice(0,10);
             let html = '<table><tr><th>Cliente</th><th>Total Bruto</th></tr>';
-            sorted.forEach(([c, v]) => html += `<tr><td>${c}</td><td>$${v.toLocaleString()}</td></tr>`);
+            sorted.forEach(([c,v]) => html += `<tr><td>${c}</td><td>$${v.toLocaleString()}</td></tr>`);
             html += '</table>';
             document.getElementById('tablaClientes').innerHTML = html;
         }
@@ -397,18 +470,28 @@
             window._chartAprobAnual = new Chart(ctx2, { type: 'doughnut', data: { labels: ['Aprobadas','No Aprobadas'], datasets: [{ data: [aprobadas, totalTrans - aprobadas], backgroundColor: ['#2e7d32','#e0e0e0'] }] }, options: { responsive: true } });
         }
 
-        window.iniciarSesion = function() {
-            const u = document.getElementById('loginUsername').value.trim();
+        function mostrarToast(msg) {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+            const t = document.createElement('div');
+            t.className = 'toast';
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 2500);
+        }
+
+        window.iniciarSesion = async function() {
+            const u = document.getElementById('loginUsername').value.trim().toLowerCase();
             const p = document.getElementById('loginPassword').value;
             const err = document.getElementById('loginError'); err.textContent = '';
-            const user = USUARIOS[u.toLowerCase()];
+            const user = USUARIOS[u];
             if (!user || user.password !== p) { err.textContent = 'Credenciales incorrectas.'; return; }
-            usuarioActual = user;
+            usuarioActual = { username: u, rol: user.rol, nombre: user.nombre };
             document.getElementById('loginOverlay').style.display = 'none';
             document.getElementById('sidebar').style.display = 'flex';
             document.getElementById('mainContent').style.display = 'block';
-            document.getElementById('loggedUserLabel').textContent = user.nombre;
-            inicializarDatos();
+            document.getElementById('loggedUserLabel').textContent = usuarioActual.nombre;
+            await inicializarDatos();
             setActiveView('monthly', 0);
         };
         window.cerrarSesion = function() {
@@ -416,6 +499,12 @@
             document.getElementById('loginOverlay').style.display = 'flex';
             document.getElementById('sidebar').style.display = 'none';
             document.getElementById('mainContent').style.display = 'none';
+            if (window._chartProdServ) window._chartProdServ.destroy();
+            if (window._chartHPSImport) window._chartHPSImport.destroy();
+            if (window._chartProdServAnual) window._chartProdServAnual.destroy();
+            if (window._chartHPSImportAnual) window._chartHPSImportAnual.destroy();
+            if (window._chartMeta) window._chartMeta.destroy();
+            if (window._chartAprobAnual) window._chartAprobAnual.destroy();
         };
         document.querySelectorAll('.sidebar-nav button[data-view]').forEach(btn => {
             btn.addEventListener('click', function() {
